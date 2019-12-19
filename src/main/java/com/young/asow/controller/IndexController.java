@@ -2,12 +2,10 @@ package com.young.asow.controller;
 
 import com.young.asow.entity.LoginUser;
 import com.young.asow.service.UserService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/index")
 public class IndexController {
 
     private final UserService userService;
