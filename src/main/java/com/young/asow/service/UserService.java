@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.User;
 
 import java.util.Collections;
+import java.util.Optional;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -20,19 +21,21 @@ public class UserService implements UserDetailsService {
     }
 
     public void addUser(LoginUser user) {
-        userRepository.save(user);
+        userRepository.findByUsername(user.getUsername()).ifPresentOrElse(
+                loginUser -> {
+                    throw new RuntimeException("[ " + user.getUsername() + " ] 已经注册过了");
+                }, () -> {
+                    userRepository.save(user);
+                });
     }
 
-    public LoginUser getUserByUsername(String username) {
+    public Optional<LoginUser> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        LoginUser user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException(username);
-        }
+        LoginUser user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
         return new User(user.getUsername(), user.getPassword(), Collections.emptyList());
     }
 }

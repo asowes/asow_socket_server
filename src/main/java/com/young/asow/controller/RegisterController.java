@@ -5,12 +5,12 @@ import com.young.asow.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/index")
-public class IndexController {
+@RequestMapping("/register")
+public class RegisterController {
 
     private final UserService userService;
 
-    public IndexController(UserService userService) {
+    public RegisterController(UserService userService) {
         this.userService = userService;
     }
 
@@ -20,15 +20,10 @@ public class IndexController {
     }
 
 
-    @PostMapping("/register")
-    public String addUser(
+    @PostMapping("/user")
+    public void addUser(
             final @RequestBody LoginUser user
     ) {
-        try {
-            userService.addUser(user);
-        } catch (Exception ignored) {
-            return "注册失败";
-        }
-        return "注册成功";
+        userService.addUser(user);
     }
 }

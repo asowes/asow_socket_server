@@ -19,10 +19,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private final UserService userService;
 
     public static final String[] AUTH_WHITELIST = {
-            "/index/**",
-            "/user/**",
+            "/register/**",
+//            "/user/**",
             "/login/**",
-            "/**"
+//            "/**"
     };
 
     @Autowired
