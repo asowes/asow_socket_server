@@ -81,8 +81,7 @@ public class JWTUtil {
 
     public static void issueToken(
             final LoginUser loginUser,
-            final HttpServletResponse response,
-            final boolean isLine
+            final HttpServletResponse response
     ) throws IOException {
         String token;
         Calendar cal = Calendar.getInstance();

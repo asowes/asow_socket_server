@@ -3,9 +3,7 @@ package com.young.asow.entity;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 @Data
@@ -17,8 +15,8 @@ import javax.persistence.Id;
 public class LoginUser {
 
     @Column
-    @NonNull
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @Column

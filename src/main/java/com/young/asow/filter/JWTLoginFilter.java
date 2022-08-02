@@ -20,7 +20,6 @@ import java.util.Collections;
 public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
-    private LoginUser loginUser;
 
     public JWTLoginFilter(
             AuthenticationManager authenticationManager,
@@ -33,15 +32,13 @@ public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-        try {
-            loginUser = new ObjectMapper().readValue(request.getInputStream(), LoginUser.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+
         return authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginUser.getUsername(),
-                        loginUser.getPassword(),
+                        username,
+                        password,
                         Collections.emptyList()
                 )
         );
@@ -49,8 +46,8 @@ public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        String username = loginUser.getUsername();
+        String username = (String) authResult.getPrincipal();
         LoginUser loginUser = userService.getUserByUsername(username);
-        JWTUtil.issueToken(loginUser, response, false);
+        JWTUtil.issueToken(loginUser, response);
     }
 }
