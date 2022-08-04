@@ -1,6 +1,5 @@
 package com.young.asow.config;
 
-import com.young.asow.service.UserService;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -9,6 +8,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Collections;
 
@@ -26,7 +26,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(name);
         if (null != userDetails) {
-            if (password.equals(userDetails.getPassword())) {
+            BCryptPasswordEncoder bcryptPassword = new BCryptPasswordEncoder();
+            if (bcryptPassword.matches(password, userDetails.getPassword())) {
                 return new UsernamePasswordAuthenticationToken(name, password, Collections.emptyList());
             } else {
                 throw new BadCredentialsException("密码有误");

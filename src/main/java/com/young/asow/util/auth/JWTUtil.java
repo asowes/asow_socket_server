@@ -7,17 +7,20 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.young.asow.constant.ConstantKey;
+import com.young.asow.entity.Authority;
 import com.young.asow.entity.LoginUser;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.util.Strings;
 
 import com.auth0.jwt.algorithms.Algorithm;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Log4j2
 public class JWTUtil {
@@ -90,11 +93,16 @@ public class JWTUtil {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         log.info("过期时间:" + dateFormat.format(expiryDate));
 
+        Set<String> authorities = loginUser.getAuthorities()
+                .stream()
+                .map(Authority::getAuthority)
+                .collect(Collectors.toSet());
+
         token = encode(
                 JWTToken.builder()
                         .userId(loginUser.getId())
                         .token(loginUser.getUsername())
-                        .roles(new ArrayList<>())
+                        .roles(authorities)
                         .build(),
                 expiryDate.getTime()
         );

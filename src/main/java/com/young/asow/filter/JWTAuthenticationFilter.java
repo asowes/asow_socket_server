@@ -1,12 +1,14 @@
 package com.young.asow.filter;
 
 import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.young.asow.entity.Authority;
 import com.young.asow.util.auth.JWTToken;
 import com.young.asow.util.auth.JWTUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -15,9 +17,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.young.asow.config.WebSecurityConfig.AUTH_WHITELIST;
@@ -52,15 +52,23 @@ public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
 
         try {
             JWTToken decoded = JWTUtil.decode(tokenStr);
+            // todo fixme 需要校验用户状态以及用户Id是否存在（如果数据库被清空了，token中附带的信息仍然能够通过以下校验）
             if (decoded == null) {
                 throw new TokenExpiredException("Invalid token");
             }
+
+            Set<Authority> authorities = new HashSet<>();
+            for (String role : decoded.getRoles()) {
+                authorities.add(new Authority(role));
+            }
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             JWTToken.JWT_TOKEN,
                             decoded,
-                            Collections.emptyList()
+                            authorities
                     );
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
             chain.doFilter(request, response);
         } catch (TokenExpiredException e) {

@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -29,6 +30,6 @@ public class JWTToken {
     /**
      * login user's roles
      */
-    List<String> roles;
+    Set<String> roles;
 
 }

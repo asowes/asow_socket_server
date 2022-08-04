@@ -4,6 +4,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Data
@@ -26,4 +28,12 @@ public class LoginUser {
     @Column
     @NonNull
     String password;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    Set<Authority> authorities = new HashSet<>();
+
+    public void addAuthority(Authority authority) {
+        authorities.add(authority);
+    }
+
 }

@@ -1,6 +1,5 @@
 package com.young.asow.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.young.asow.entity.LoginUser;
 import com.young.asow.service.UserService;
 import com.young.asow.util.auth.JWTUtil;

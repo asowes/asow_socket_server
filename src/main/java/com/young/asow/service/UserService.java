@@ -1,10 +1,12 @@
 package com.young.asow.service;
 
+import com.young.asow.entity.Authority;
 import com.young.asow.entity.LoginUser;
 import com.young.asow.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.User;
 
@@ -25,6 +27,9 @@ public class UserService implements UserDetailsService {
                 loginUser -> {
                     throw new RuntimeException("[ " + user.getUsername() + " ] 已经注册过了");
                 }, () -> {
+                    BCryptPasswordEncoder bcryptPassword = new BCryptPasswordEncoder();
+                    user.addAuthority(new Authority(Authority.ROLE.USER.value()));
+                    user.setPassword(bcryptPassword.encode(user.getPassword()));
                     userRepository.save(user);
                 });
     }
