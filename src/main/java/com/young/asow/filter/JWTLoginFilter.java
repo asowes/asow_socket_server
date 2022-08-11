@@ -1,6 +1,6 @@
 package com.young.asow.filter;
 
-import com.young.asow.entity.LoginUser;
+import com.young.asow.entity.Account;
 import com.young.asow.service.UserService;
 import com.young.asow.util.auth.JWTUtil;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -47,7 +47,7 @@ public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         String username = (String) authResult.getPrincipal();
-        LoginUser loginUser = userService.getUserByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
-        JWTUtil.issueToken(loginUser, response);
+        Account account = userService.getUserByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
+        JWTUtil.issueToken(account, response);
     }
 }

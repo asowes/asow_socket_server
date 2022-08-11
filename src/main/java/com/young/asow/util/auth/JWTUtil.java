@@ -8,7 +8,7 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.young.asow.constant.ConstantKey;
 import com.young.asow.entity.Authority;
-import com.young.asow.entity.LoginUser;
+import com.young.asow.entity.Account;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.util.Strings;
 
@@ -83,7 +83,7 @@ public class JWTUtil {
 
 
     public static void issueToken(
-            final LoginUser loginUser,
+            final Account account,
             final HttpServletResponse response
     ) throws IOException {
         String token;
@@ -93,15 +93,15 @@ public class JWTUtil {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         log.info("过期时间:" + dateFormat.format(expiryDate));
 
-        Set<String> authorities = loginUser.getAuthorities()
+        Set<String> authorities = account.getAuthorities()
                 .stream()
                 .map(Authority::getAuthority)
                 .collect(Collectors.toSet());
 
         token = encode(
                 JWTToken.builder()
-                        .userId(loginUser.getId())
-                        .token(loginUser.getUsername())
+                        .userId(account.getId())
+                        .token(account.getUsername())
                         .roles(authorities)
                         .build(),
                 expiryDate.getTime()
@@ -109,7 +109,7 @@ public class JWTUtil {
 
         Map<String, String> params = new HashMap<>();
         params.put("token", token);
-        params.put("userId", String.valueOf(loginUser.getId()));
+        params.put("userId", String.valueOf(account.getId()));
         response.setContentType("application/json; charset=utf-8");
         PrintWriter out = response.getWriter();
         out.write(JSON.toJSONString(params));
