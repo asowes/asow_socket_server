@@ -15,15 +15,22 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Account extends BaseEntity{
+public class Account extends BaseEntity {
 
     @Column
     @NonNull
     String username;
 
     @Column
+    String nickname;
+
+    @Column
     @NonNull
     String password;
+
+    @Column
+    @NonNull
+    String email;
 
     @ElementCollection(fetch = FetchType.EAGER)
     Set<Authority> authorities = new HashSet<>();

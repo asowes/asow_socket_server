@@ -28,6 +28,7 @@ public class Authority implements GrantedAuthority {
     public enum ROLE {
         USER,
         ADMIN,
+        SUPER_ADMIN
         ;
 
         private static final String ROLE_AUTHORITY_PREFIX = "ROLE_";
