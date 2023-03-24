@@ -9,6 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/user")
 public class UserController {
 
+    @GetMapping("/socket")
+    public void socket() {
+
+
+    }
+
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/hello")
     public String test() {
