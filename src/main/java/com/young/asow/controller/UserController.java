@@ -15,7 +15,7 @@ public class UserController {
         return "Hello World！";
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @GetMapping("/hello/plus")
     public String test2() {
         return "Hello World Plus!";

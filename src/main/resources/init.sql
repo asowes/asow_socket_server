@@ -22,7 +22,7 @@ INSERT INTO user_authorities(user_id, authority)
 VALUES (2, 'ROLE_SUPER_ADMIN');
 
 INSERT INTO user_authorities(user_id, authority)
-VALUES (3, 'ROLE_USER');
+VALUES (3, 'ROLE_ADMIN');
 
 INSERT INTO user_authorities(user_id, authority)
 VALUES (4, 'ROLE_USER');
