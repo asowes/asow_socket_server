@@ -1,6 +1,6 @@
 package com.young.asow.controller;
 
-import com.young.asow.entity.Account;
+import com.young.asow.modal.UserModal;
 import com.young.asow.response.RestResponse;
 import com.young.asow.service.UserService;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +23,10 @@ public class RegisterController {
 
     @PostMapping("/user")
     public RestResponse<Object> addUser(
-            final @RequestBody Account user
+            final @RequestBody UserModal modal
     ) {
         try {
-            userService.addUser(user);
+            userService.addUser(modal);
             return RestResponse.ok("用户创建成功");
         } catch (Exception e) {
             return RestResponse.fail(e.getMessage());

@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,7 +16,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Account extends BaseEntity {
+public class User extends BaseEntity {
 
     @Column
     @NonNull
@@ -31,6 +32,9 @@ public class Account extends BaseEntity {
     @Column
     @NonNull
     String email;
+
+    @Column
+    LocalDateTime lastLoginTime;
 
     @ElementCollection(fetch = FetchType.EAGER)
     Set<Authority> authorities = new HashSet<>();
