@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.young.asow.constant.ConstantKey;
@@ -12,20 +13,16 @@ import com.young.asow.entity.User;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.util.Strings;
 
-import com.auth0.jwt.algorithms.Algorithm;
-
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
 public class JWTUtil {
-    private static Algorithm algorithm;
-    private static JWTVerifier verifier;
+    private static final Algorithm algorithm;
+    private static final JWTVerifier verifier;
 
     static {
         try {
@@ -52,7 +49,7 @@ public class JWTUtil {
 
     public static JWTToken decode(String token) throws TokenExpiredException {
         Optional<JWTToken> jwtToken = decodeMayOptional(token);
-        return jwtToken.orElseThrow(() -> new TokenExpiredException("JWTToken Invalid"));
+        return jwtToken.orElseThrow(() -> new TokenExpiredException("JWTToken expired"));
     }
 
     public static Optional<JWTToken> decodeMayOptional(String tokenMayContainsBearer) {
@@ -63,18 +60,14 @@ public class JWTUtil {
         String token = tokenMayContainsBearer.replace("Bearer ", "");
         try {
             DecodedJWT jwt = verifier.verify(token);
-            Date expiresAt = jwt.getExpiresAt();
-            if (expiresAt.getTime() < System.currentTimeMillis()) {
-                log.warn("JWTToken expired at" + expiresAt);
-                return Optional.empty();
-
-            }
             String json = jwt.getClaim(_JSON).asString();
             if (json == null) {
                 log.warn("Never, JWTToken invalid. token=" + token);
                 return Optional.empty();
             }
             return Optional.of(JSON.toJavaObject(JSONObject.parseObject(json), JWTToken.class));
+        } catch (TokenExpiredException e) {
+            return Optional.empty();
         } catch (Exception e) {
             log.warn("Never, JWTToken format NG." + e.getMessage() + " token=" + token);
             return Optional.empty();
@@ -87,11 +80,11 @@ public class JWTUtil {
             final HttpServletResponse response
     ) throws IOException {
         String token;
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, 180);     //设定token过期时间，默认180天
-        Date expiryDate = cal.getTime();
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        log.info("过期时间:" + dateFormat.format(expiryDate));
+        long currentTime = System.currentTimeMillis();
+//        long exp = currentTime + 1000 * 60 * 15;
+        long exp = currentTime + 1000  * 15;
+//        long exp = currentTime + 1000L * 60 * 60 * 24 * 180;
+        log.info("过期时间:" + new Date(exp));
 
         Set<String> authorities = user.getAuthorities()
                 .stream()
@@ -104,7 +97,7 @@ public class JWTUtil {
                         .token(user.getUsername())
                         .roles(authorities)
                         .build(),
-                expiryDate.getTime()
+                exp
         );
 
         Map<String, String> params = new HashMap<>();
@@ -114,5 +107,11 @@ public class JWTUtil {
         PrintWriter out = response.getWriter();
         out.write(JSON.toJSONString(params));
         out.close();
+    }
+
+    public static String getUserId(String token) {
+        String tokenStr = token.substring(JWTToken.TOKEN_PREFIX_BEARER.length()).trim();
+        JWTToken decoded = JWTUtil.decode(tokenStr);
+        return String.valueOf(decoded.getUserId());
     }
 }
