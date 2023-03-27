@@ -1,5 +1,6 @@
 package com.young.asow.controller;
 
+import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.UserModal;
 import com.young.asow.response.RestResponse;
 import com.young.asow.service.UserService;
@@ -17,6 +18,9 @@ public class RegisterController {
 
     @GetMapping("/")
     public String test() {
+        if (true) {
+            throw new BusinessException("aaaaa");
+        }
         return "hello word!";
     }
 

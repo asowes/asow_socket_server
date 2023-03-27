@@ -81,8 +81,7 @@ public class JWTUtil {
     ) throws IOException {
         String token;
         long currentTime = System.currentTimeMillis();
-//        long exp = currentTime + 1000 * 60 * 15;
-        long exp = currentTime + 1000  * 15;
+        long exp = currentTime + 1000 * 60 * 15;
 //        long exp = currentTime + 1000L * 60 * 60 * 24 * 180;
         log.info("过期时间:" + new Date(exp));
 

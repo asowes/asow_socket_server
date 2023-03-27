@@ -1,5 +1,7 @@
 package com.young.asow.socket;
 
+import com.alibaba.fastjson.JSON;
+import com.young.asow.response.RestResponse;
 import com.young.asow.util.auth.JWTUtil;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -30,21 +32,24 @@ public class WebSocketServer {
     // 接收id
     private String uid;
 
+    private String token;
+
     // 连接建立成功调用的方法
     @OnOpen
-    public void onOpen(Session session, @PathParam("token") String uid) {
-        String userId = JWTUtil.getUserId(uid);
+    public void onOpen(Session session, @PathParam("token") String token) {
+        String userId = JWTUtil.getUserId(token);
         log.info("用户Id：" + userId);
         session.setMaxIdleTimeout(sessionTimeout);
         this.session = session;
         this.uid = userId;
+        this.token = token;
         if (webSocketMap.containsKey(userId)) {
             webSocketMap.remove(userId);
         }
         webSocketMap.put(userId, this);
         log.info("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         try {
-            sendMessage("=====连接成功=====");
+            sendMessage("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         } catch (IOException e) {
             log.error("websocket发送连接成功错误编号uid: " + userId + "，网络异常!!!");
         }
@@ -52,7 +57,7 @@ public class WebSocketServer {
 
     // 连接关闭调用的方法
     @OnClose
-    public void onClose() {
+    public void onClose(Session session) throws IOException {
         try {
             if (webSocketMap.containsKey(uid)) {
                 webSocketMap.remove(uid);
@@ -71,7 +76,8 @@ public class WebSocketServer {
      */
     @OnMessage(maxMessageSize = 1024 * 1000)
     public void onMessage(String message, Session session) {
-        log.info("websocket收到客户端编号uid消息: " + uid + ", 报文: " + message);
+        String userId = JWTUtil.getUserId(token);
+        log.info("websocket收到客户端编号uid消息: " + userId + ", 报文: " + message);
     }
 
     /**
@@ -81,7 +87,7 @@ public class WebSocketServer {
      * @param error
      */
     @OnError
-    public void onError(Session session, Throwable error) {
+    public void onError(Session session, Throwable error) throws IOException {
         log.error("websocket编号uid错误: " + this.uid + "原因: " + error.getMessage());
         error.printStackTrace();
     }
