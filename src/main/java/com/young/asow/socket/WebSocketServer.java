@@ -1,6 +1,7 @@
 package com.young.asow.socket;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.young.asow.response.RestResponse;
 import com.young.asow.util.auth.JWTUtil;
 import lombok.NonNull;
@@ -11,6 +12,7 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,8 +77,12 @@ public class WebSocketServer {
      * @param session
      */
     @OnMessage(maxMessageSize = 1024 * 1000)
-    public void onMessage(String message, Session session) {
+    public void onMessage(String message, Session session) throws IOException {
         String userId = JWTUtil.getUserId(token);
+        SocketMessage sm = new SocketMessage();
+        sm.setType("pong");
+        sm.setMsg(LocalDateTime.now().toString());
+        session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
         log.info("websocket收到客户端编号uid消息: " + userId + ", 报文: " + message);
     }
 
