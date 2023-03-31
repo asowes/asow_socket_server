@@ -79,11 +79,25 @@ public class WebSocketServer {
     @OnMessage(maxMessageSize = 1024 * 1000)
     public void onMessage(String message, Session session) throws IOException {
         String userId = JWTUtil.getUserId(token);
+
+        SocketMessage client = JSONObject.parseObject(message, SocketMessage.class);
+
+        // send pong
         SocketMessage sm = new SocketMessage();
         sm.setType("pong");
-        sm.setMsg(LocalDateTime.now().toString());
+        sm.setEvent("heartbeat");
+        sm.setMessageContent(LocalDateTime.now().toString());
         session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
-        log.info("websocket收到客户端编号uid消息: " + userId + ", 报文: " + message);
+
+        // send test
+        if (Objects.equals("chat", client.getEvent())) {
+            sm.setType("chat");
+            sm.setEvent("chat");
+            sm.setMessageContent("我收到了你的信息啦");
+            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
+        }
+
+        log.info("websocket收到客户端编号uid消息: " + userId);
     }
 
     /**
