@@ -6,6 +6,7 @@ import com.young.asow.response.RestResponse;
 import com.young.asow.util.auth.JWTUtil;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.websocket.*;
@@ -23,10 +24,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ServerEndpoint(value = "/websocket/{token}")
 public class WebSocketServer {
 
+    @Autowired
+    public static WebSocketService webSocketService;
+
     private static final long sessionTimeout = 60000;
 
     // 用来存放每个客户端对应的WebSocketServer对象
-    private static Map<String, WebSocketServer> webSocketMap = new ConcurrentHashMap<>();
+    private static final Map<String, WebSocketServer> webSocketMap = new ConcurrentHashMap<>();
 
     // 与某个客户端的连接会话，需要通过它来给客户端发送数据
     private Session session;
