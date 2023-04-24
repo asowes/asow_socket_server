@@ -18,5 +18,7 @@ public class SocketMessage {
 
     String toId;
 
+    String fromId;
+
     Object data = new Object();
 }

@@ -97,8 +97,17 @@ public class WebSocketServer {
         if (Objects.equals("chat", client.getEvent())) {
             sm.setType("chat");
             sm.setEvent("chat");
-            sm.setMessageContent("我收到了你的信息啦");
-            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
+            sm.setToId(client.getToId());
+            sm.setMessageContent(client.getMessageContent());
+
+            //  发给自己，可以看作是系统消息
+//            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
+
+            // 别管是谁发的  在这里发给谁  谁就能收到
+            sendMessageByWayBillId(client.getToId(), JSONObject.toJSONString(sm));
+
+            // 保存消息到数据库，刷新列表时加载
+//            webSocketService.saveChat(sm);
         }
 
         log.info("websocket收到客户端编号uid消息: " + userId);
