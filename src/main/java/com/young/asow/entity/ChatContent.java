@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatContent extends BaseEntity{
+public class ChatContent extends BaseEntity {
 
     @Length(max = 1024)
     @Column(columnDefinition = "varchar(1024)")

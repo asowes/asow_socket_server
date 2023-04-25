@@ -6,6 +6,7 @@ import com.young.asow.service.ChatService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class WebSocketService {
@@ -18,8 +19,8 @@ public class WebSocketService {
 
     public void saveChat(SocketMessage message) {
         Chat chat = new Chat();
-        chat.setFromId(1L);
-        chat.setToId(3L);
+        chat.setFromId(message.getFromId());
+        chat.setToId(message.getToId());
         chat.setStatus("1");
 
         ChatContent content = new ChatContent();

@@ -17,13 +17,13 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Chat extends BaseEntity{
+public class Chat extends BaseEntity {
 
     @Column
-    Long fromId;
+    String fromId;
 
     @Column
-    Long toId;
+    String toId;
 
     // 消息状态  1：未读  2：已读  3：撤回
     @Column

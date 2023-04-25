@@ -97,6 +97,7 @@ public class WebSocketServer {
         if (Objects.equals("chat", client.getEvent())) {
             sm.setType("chat");
             sm.setEvent("chat");
+            sm.setFromId(client.getFromId());
             sm.setToId(client.getToId());
             sm.setMessageContent(client.getMessageContent());
 
@@ -107,7 +108,7 @@ public class WebSocketServer {
             sendMessageByWayBillId(client.getToId(), JSONObject.toJSONString(sm));
 
             // 保存消息到数据库，刷新列表时加载
-//            webSocketService.saveChat(sm);
+            webSocketService.saveChat(sm);
         }
 
         log.info("websocket收到客户端编号uid消息: " + userId);
