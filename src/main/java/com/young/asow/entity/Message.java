@@ -2,15 +2,13 @@ package com.young.asow.entity;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.validator.constraints.Length;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity(name = "chat_content")
+@Entity(name = "chat_message")
 @Getter
 @Setter
 @ToString
@@ -18,14 +16,23 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatContent extends BaseEntity {
+public class Message extends BaseEntity {
 
     // copy conversationId并且在其后方拼接 - 再拼接消息总数length 例如：1879854654-57
     // 下拉更新聊天记录时，将此Id传入，倒叙查该Id之前的值
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.AUTO, generator = "message-id")
+//    @GenericGenerator(name = "message-id", strategy = "com.young.asow.util.PrimaryIDGenerator")
+    @Column
     String messageId;
 
+    @Column
+    String conversationId;
+
+    @Column
     String fromId;
 
+    @Column
     String toId;
 
     @Length(max = 1024)
@@ -39,8 +46,6 @@ public class ChatContent extends BaseEntity {
     @Column
     String type;
 
+    @Column
     Boolean isLatest;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    Chat chat;
 }

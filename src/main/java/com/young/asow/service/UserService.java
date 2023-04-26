@@ -4,6 +4,7 @@ import com.young.asow.entity.Authority;
 import com.young.asow.entity.User;
 import com.young.asow.modal.UserModal;
 import com.young.asow.repository.UserRepository;
+import com.young.asow.util.SnowflakeIdGenerator;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,6 +30,7 @@ public class UserService implements UserDetailsService {
                 }, () -> {
                     BCryptPasswordEncoder bcryptPassword = new BCryptPasswordEncoder();
                     User user = new User();
+                    user.setUserId(SnowflakeIdGenerator.getId());
                     user.setUsername(modal.getUsername());
                     user.setPassword(bcryptPassword.encode(modal.getPassword()));
                     user.addAuthority(new Authority(Authority.ROLE.USER.value()));
@@ -44,5 +46,9 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
         return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), Collections.emptyList());
+    }
+
+    public Optional<User> getUserByUserId(String userId) {
+        return userRepository.findByUserId(userId);
     }
 }

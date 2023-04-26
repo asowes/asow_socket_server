@@ -93,7 +93,7 @@ public class JWTUtil {
 
         token = encode(
                 JWTToken.builder()
-                        .userId(user.getId())
+                        .userId(user.getUserId())
                         .token(user.getUsername())
                         .roles(authorities)
                         .build(),
@@ -102,7 +102,7 @@ public class JWTUtil {
 
         Map<String, String> params = new HashMap<>();
         params.put("token", token);
-        params.put("userId", String.valueOf(user.getId()));
+        params.put("userId", user.getUserId());
         response.setContentType("application/json; charset=utf-8");
         PrintWriter out = response.getWriter();
         out.write(JSON.toJSONString(params));

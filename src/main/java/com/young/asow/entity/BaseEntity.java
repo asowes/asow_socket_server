@@ -1,6 +1,7 @@
 package com.young.asow.entity;
 
 import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -10,6 +11,9 @@ import java.io.Serializable;
 @Setter
 @ToString
 public abstract class BaseEntity implements Serializable {
+
+    //    @GeneratedValue(strategy = GenerationType.AUTO, generator = "primary-id")
+    //    @GenericGenerator(name = "primary-id", strategy = "com.young.asow.util.PrimaryIDGenerator")
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

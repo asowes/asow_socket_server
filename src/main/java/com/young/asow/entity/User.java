@@ -19,6 +19,9 @@ import java.util.Set;
 public class User extends BaseEntity {
 
     @Column
+    String userId;
+
+    @Column
     @NonNull
     String username;
 
@@ -32,6 +35,9 @@ public class User extends BaseEntity {
     @Column
     @NonNull
     String email;
+
+    @Column
+    String avatar;
 
     @Column
     LocalDateTime lastLoginTime;

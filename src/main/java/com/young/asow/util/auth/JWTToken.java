@@ -20,7 +20,7 @@ public class JWTToken {
     /**
      * login user's id
      */
-    long userId;
+    String userId;
 
     /**
      * issue token

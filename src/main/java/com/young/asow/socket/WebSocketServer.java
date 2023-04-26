@@ -86,32 +86,54 @@ public class WebSocketServer {
 
         SocketMessage client = JSONObject.parseObject(message, SocketMessage.class);
 
-        // send pong
+        handleMessageWithType(client, session);
+
+        log.info("websocket收到客户端编号uid消息: " + userId);
+    }
+
+
+    private void handleMessageWithType(SocketMessage clientMessage, Session session) throws IOException {
+        switch (clientMessage.getEvent()) {
+            case "chat":
+                handleChat(clientMessage);
+                break;
+            case "notify":
+                handleNotify();
+                break;
+            default:
+                handlePing(session);
+                break;
+        }
+    }
+
+    private void handlePing(Session session) throws IOException {
         SocketMessage sm = new SocketMessage();
         sm.setType("pong");
         sm.setEvent("heartbeat");
         sm.setMessageContent(LocalDateTime.now().toString());
         session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
+    }
 
-        // send test
-        if (Objects.equals("chat", client.getEvent())) {
-            sm.setType("chat");
-            sm.setEvent("chat");
-            sm.setFromId(client.getFromId());
-            sm.setToId(client.getToId());
-            sm.setMessageContent(client.getMessageContent());
+    private void handleChat(SocketMessage clientMessage) {
+        SocketMessage sm = new SocketMessage();
+        sm.setType("chat");
+        sm.setEvent("chat");
+        sm.setFromId(clientMessage.getFromId());
+        sm.setToId(clientMessage.getToId());
+        sm.setMessageContent(clientMessage.getMessageContent());
 
-            //  发给自己，可以看作是系统消息
+        //  发给自己，可以看作是系统消息
 //            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
 
-            // 别管是谁发的  在这里发给谁  谁就能收到
-            sendMessageByWayBillId(client.getToId(), JSONObject.toJSONString(sm));
+        // 别管是谁发的  在这里发给谁  谁就能收到
+        sendMessageByWayBillId(clientMessage.getToId(), JSONObject.toJSONString(sm));
 
-            // 保存消息到数据库，刷新列表时加载
-            webSocketService.saveChat(sm);
-        }
+        // 保存消息到数据库，刷新列表时加载
+        webSocketService.saveChat(sm);
+    }
 
-        log.info("websocket收到客户端编号uid消息: " + userId);
+    private void handleNotify() {
+        // TODO
     }
 
     /**
