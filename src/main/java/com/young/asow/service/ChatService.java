@@ -6,12 +6,16 @@ import com.young.asow.entity.Message;
 import com.young.asow.entity.User;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
+import com.young.asow.modal.MessageModal;
 import com.young.asow.repository.ChatRepository;
 import com.young.asow.repository.ConversationRepository;
 import com.young.asow.repository.MessageRepository;
 import com.young.asow.repository.UserRepository;
 import com.young.asow.util.ConvertUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -61,6 +65,16 @@ public class ChatService {
 
                     return modal;
                 })
+                .collect(Collectors.toList());
+    }
+
+    public List<MessageModal> getConversationMessages(String conversationId) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "messageId");
+        Pageable pageable = PageRequest.of(0, 15, sort);
+        return messageRepository
+                .findMessagesByConversationId(pageable, conversationId)
+                .stream()
+                .map(ConvertUtil::Message2Modal)
                 .collect(Collectors.toList());
     }
 }

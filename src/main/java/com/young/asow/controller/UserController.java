@@ -1,21 +1,27 @@
 package com.young.asow.controller;
 
+import com.young.asow.modal.UserInfoModal;
+import com.young.asow.response.RestResponse;
+import com.young.asow.service.UserService;
 import com.young.asow.socket.WebSocketServer;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.young.asow.util.auth.JWTUtil;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user")
 public class UserController {
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
     @GetMapping("/socket")
     public void socket(
             @RequestParam(name = "message") String message
     ) {
-        WebSocketServer.sendMessageByWayBillId("4", message);
+        WebSocketServer.sendMessageByWayBillId("439094307840987136", message);
     }
 
     @PreAuthorize("hasRole('USER')")
@@ -28,5 +34,14 @@ public class UserController {
     @GetMapping("/hello/plus")
     public String test2() {
         return "Hello World Plus!";
+    }
+
+    @GetMapping("/info")
+    public RestResponse<UserInfoModal> getUserInfo(
+            @RequestHeader("authorization") String token
+    ) {
+        String userId = JWTUtil.getUserId(token);
+        UserInfoModal modal = userService.getUserByUserId(userId);
+        return RestResponse.ok(modal);
     }
 }
