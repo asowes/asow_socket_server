@@ -13,4 +13,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query(value = "select cm from chat_message cm where cm.conversationId = ?1")
     List<Message> findMessagesByConversationId(Pageable pageable, String conversationId);
+
+    Optional<Message> findByConversationIdAndIsLatest(String conversationId, Boolean islast);
 }

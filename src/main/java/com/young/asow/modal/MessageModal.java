@@ -10,9 +10,15 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MessageModal {
 
+    String event;
+
     String messageId;
 
     String conversationId;
+
+    String fromId;
+
+    String toId;
 
     LocalDateTime sendTime;
 

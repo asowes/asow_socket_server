@@ -14,6 +14,8 @@ public class ConversationModal {
 
     UserInfoModal to;
 
+    UserInfoModal from;
+
     MessageModal lastMessage;
 
     LocalDateTime createTime;

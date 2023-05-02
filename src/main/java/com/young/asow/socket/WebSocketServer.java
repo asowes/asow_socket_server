@@ -2,7 +2,9 @@ package com.young.asow.socket;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.young.asow.modal.MessageModal;
 import com.young.asow.response.RestResponse;
+import com.young.asow.service.ChatService;
 import com.young.asow.util.auth.JWTUtil;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -84,7 +86,7 @@ public class WebSocketServer {
     public void onMessage(String message, Session session) throws IOException {
         String userId = JWTUtil.getUserId(token);
 
-        SocketMessage client = JSONObject.parseObject(message, SocketMessage.class);
+        MessageModal client = JSONObject.parseObject(message, MessageModal.class);
 
         handleMessageWithType(client, session);
 
@@ -92,7 +94,7 @@ public class WebSocketServer {
     }
 
 
-    private void handleMessageWithType(SocketMessage clientMessage, Session session) throws IOException {
+    private void handleMessageWithType(MessageModal clientMessage, Session session) throws IOException {
         switch (clientMessage.getEvent()) {
             case "chat":
                 handleChat(clientMessage);
@@ -107,29 +109,23 @@ public class WebSocketServer {
     }
 
     private void handlePing(Session session) throws IOException {
-        SocketMessage sm = new SocketMessage();
+        MessageModal sm = new MessageModal();
         sm.setType("pong");
         sm.setEvent("heartbeat");
-        sm.setMessageContent(LocalDateTime.now().toString());
+        sm.setContent(LocalDateTime.now().toString());
         session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
     }
 
-    private void handleChat(SocketMessage clientMessage) {
-        SocketMessage sm = new SocketMessage();
-        sm.setType("chat");
-        sm.setEvent("chat");
-        sm.setFromId(clientMessage.getFromId());
-        sm.setToId(clientMessage.getToId());
-        sm.setMessageContent(clientMessage.getMessageContent());
+    private void handleChat(MessageModal clientMessage) {
 
         //  发给自己，可以看作是系统消息
 //            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
 
         // 别管是谁发的  在这里发给谁  谁就能收到
-        sendMessageByWayBillId(clientMessage.getToId(), JSONObject.toJSONString(sm));
+        sendMessageByWayBillId(clientMessage.getToId(), JSONObject.toJSONString(clientMessage));
 
         // 保存消息到数据库，刷新列表时加载
-        webSocketService.saveChat(sm);
+        webSocketService.saveMessageWithConversation(clientMessage);
     }
 
     private void handleNotify() {
