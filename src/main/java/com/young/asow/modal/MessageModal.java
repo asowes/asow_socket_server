@@ -27,4 +27,8 @@ public class MessageModal {
     String type;
 
     Boolean isLatest;
+
+    Boolean loading;
+
+    String clientUUid;
 }

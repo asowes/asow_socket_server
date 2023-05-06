@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Conversation extends BaseEntity {
 
-//    @Id
+    //    @Id
 //    @GeneratedValue(strategy = GenerationType.AUTO, generator = "conversation-id")
 //    @GenericGenerator(name = "conversation-id", strategy = "com.young.asow.util.PrimaryIDGenerator")
     @Column
@@ -41,4 +41,8 @@ public class Conversation extends BaseEntity {
 
     @Column
     String topPriority;
+
+    public void addUnread() {
+        this.unread += 1;
+    }
 }

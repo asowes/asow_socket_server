@@ -121,10 +121,13 @@ public class WebSocketServer {
         //  发给自己，可以看作是系统消息
 //            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
 
-        // 别管是谁发的  在这里发给谁  谁就能收到
+//        clientMessage.setLoading(false);
+        // 发给目标
         sendMessageByWayBillId(clientMessage.getToId(), JSONObject.toJSONString(clientMessage));
+        // 发给自己
+        sendMessageByWayBillId(clientMessage.getFromId(), JSONObject.toJSONString(clientMessage));
 
-        // 保存消息到数据库，刷新列表时加载
+        // 保存消息到数据库，刷新列表时加载 应该要等发送成功再保存
         webSocketService.saveMessageWithConversation(clientMessage);
     }
 

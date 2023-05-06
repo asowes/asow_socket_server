@@ -41,11 +41,15 @@ public class ChatService {
         this.messageRepository = messageRepository;
     }
 
-    public void save(Chat chat) {
-        this.chatRepository.save(chat);
-    }
 
     public List<ConversationModal> getConversations(String userId) {
+        // TODO  conversation同一个会话应该要有两条数据，且他们的conversationId是一样的
+        //  fromId -> toId
+        //  toId   -> fromId
+        //  通过conversationId以及fromId即可查询出自己的conversation，这样就能取到unread
+
+        // TODO 或者设计user与conversation的表chat_user_conversation 添加unread
+        //  通过conversationId以及fromId查询该关联表查询自己的unread
         List<Conversation> dbConversations = this.conversationRepository.findByUserId(userId);
 
         return dbConversations.stream()
@@ -88,15 +92,16 @@ public class ChatService {
 
     @Transactional
     public void saveMessageWithConversation(MessageModal messageModal) {
-        //TODO 更新conversation 表里面的last message内容
         Message message = new Message();
 
+        // 将原本的最后一条消息的isLatest设置成false
         String findConversationId = messageModal.getConversationId();
         Message lastMessage = messageRepository.findByConversationIdAndIsLatest(findConversationId, true)
                 .orElseThrow(() -> new BusinessException("[" + findConversationId + "]" + " is not found"));
         lastMessage.setIsLatest(false);
         messageRepository.save(lastMessage);
 
+        // 保存本次消息，并设置为最后一条消息
         String newMessageId = GenerateUtil.generateMessageId(findConversationId, lastMessage.getMessageId());
         message.setMessageId(newMessageId);
         message.setIsLatest(true);
@@ -107,5 +112,12 @@ public class ChatService {
         message.setType(messageModal.getType());
         message.setContent(messageModal.getContent());
         messageRepository.save(message);
+
+        // 将最后一条消息的id绑定到会话中
+        Conversation dbConversation = conversationRepository.findByConversationId(findConversationId)
+                .orElseThrow(() -> new BusinessException("[" + findConversationId + "]" + " is not found"));
+        dbConversation.setLastMessageId(newMessageId);
+        dbConversation.addUnread();
+        conversationRepository.save(dbConversation);
     }
 }
