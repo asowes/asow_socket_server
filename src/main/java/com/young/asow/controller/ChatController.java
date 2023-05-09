@@ -25,7 +25,7 @@ public class ChatController {
     public RestResponse<List<ConversationModal>> getCurrentUserConversations(
             @RequestHeader("authorization") String token
     ) {
-        String userId = JWTUtil.getUserId(token);
+        Long userId = JWTUtil.getUserId(token);
         List<ConversationModal> dbConversations = this.chatService.getConversations(userId);
         return RestResponse.ok(dbConversations);
     }

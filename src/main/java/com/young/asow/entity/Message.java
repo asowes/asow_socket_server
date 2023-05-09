@@ -18,22 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Message extends BaseEntity {
 
-    // copy conversationId并且在其后方拼接 - 再拼接消息总数length 例如：1879854654-57
-    // 下拉更新聊天记录时，将此Id传入，倒叙查该Id之前的值
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.AUTO, generator = "message-id")
-//    @GenericGenerator(name = "message-id", strategy = "com.young.asow.util.PrimaryIDGenerator")
     @Column
     String messageId;
-
-    @Column
-    String conversationId;
-
-    @Column
-    String fromId;
-
-    @Column
-    String toId;
 
     @Length(max = 1024)
     @Column(columnDefinition = "varchar(1024)")
@@ -48,4 +34,17 @@ public class Message extends BaseEntity {
 
     @Column
     Boolean isLatest;
+
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JoinColumn(name = "from_id")
+    private User from;
+
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_id")
+    private User to;
+
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
+
 }

@@ -38,14 +38,14 @@ public class WebSocketServer {
     private Session session;
 
     // 接收id
-    private String uid;
+    private Long uid;
 
     private String token;
 
     // 连接建立成功调用的方法
     @OnOpen
     public void onOpen(Session session, @PathParam("token") String token) {
-        String userId = JWTUtil.getUserId(token);
+        Long userId = JWTUtil.getUserId(token);
         log.info("用户Id：" + userId);
         session.setMaxIdleTimeout(sessionTimeout);
         this.session = session;
@@ -54,7 +54,7 @@ public class WebSocketServer {
         if (webSocketMap.containsKey(userId)) {
             webSocketMap.remove(userId);
         }
-        webSocketMap.put(userId, this);
+        webSocketMap.put(String.valueOf(userId), this);
         log.info("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         try {
             sendMessage("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
@@ -84,7 +84,7 @@ public class WebSocketServer {
      */
     @OnMessage(maxMessageSize = 1024 * 1000)
     public void onMessage(String message, Session session) throws IOException {
-        String userId = JWTUtil.getUserId(token);
+        Long userId = JWTUtil.getUserId(token);
 
         MessageModal client = JSONObject.parseObject(message, MessageModal.class);
 

@@ -93,7 +93,7 @@ public class JWTUtil {
 
         token = encode(
                 JWTToken.builder()
-                        .userId(user.getUserId())
+                        .userId(user.getId())
                         .token(user.getUsername())
                         .roles(authorities)
                         .build(),
@@ -102,16 +102,16 @@ public class JWTUtil {
 
         Map<String, String> params = new HashMap<>();
         params.put("token", token);
-        params.put("userId", user.getUserId());
+        params.put("userId", String.valueOf(user.getId()));
         response.setContentType("application/json; charset=utf-8");
         PrintWriter out = response.getWriter();
         out.write(JSON.toJSONString(params));
         out.close();
     }
 
-    public static String getUserId(String token) {
+    public static Long getUserId(String token) {
         String tokenStr = token.substring(JWTToken.TOKEN_PREFIX_BEARER.length()).trim();
         JWTToken decoded = JWTUtil.decode(tokenStr);
-        return String.valueOf(decoded.getUserId());
+        return decoded.getUserId();
     }
 }

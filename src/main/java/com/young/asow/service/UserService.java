@@ -33,7 +33,6 @@ public class UserService implements UserDetailsService {
                 }, () -> {
                     BCryptPasswordEncoder bcryptPassword = new BCryptPasswordEncoder();
                     User user = new User();
-                    user.setUserId(SnowflakeIdGenerator.getId());
                     user.setUsername(modal.getUsername());
                     user.setPassword(bcryptPassword.encode(modal.getPassword()));
                     user.addAuthority(new Authority(Authority.ROLE.USER.value()));
@@ -51,9 +50,9 @@ public class UserService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), Collections.emptyList());
     }
 
-    public UserInfoModal getUserByUserId(String userId) {
+    public UserInfoModal getUserByUserId(Long userId) {
         User user = userRepository
-                .findByUserId(userId)
+                .findById(userId)
                 .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
         return ConvertUtil.User2Modal(user);
     }

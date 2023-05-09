@@ -40,7 +40,7 @@ public class UserController {
     public RestResponse<UserInfoModal> getUserInfo(
             @RequestHeader("authorization") String token
     ) {
-        String userId = JWTUtil.getUserId(token);
+        Long userId = JWTUtil.getUserId(token);
         UserInfoModal modal = userService.getUserByUserId(userId);
         return RestResponse.ok(modal);
     }

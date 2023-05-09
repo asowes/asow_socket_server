@@ -5,21 +5,20 @@ import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-@Entity
+@Entity(name = "user")
 @Getter
 @Setter
-@ToString
+//@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
 public class User extends BaseEntity {
-
-    @Column
-    String userId;
 
     @Column
     @NonNull
@@ -49,4 +48,12 @@ public class User extends BaseEntity {
         authorities.add(authority);
     }
 
+//    @OneToMany(mappedBy = "from", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+//    private List<Message> fromMessages = new ArrayList<>();
+//
+//    @OneToMany(mappedBy = "to", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+//    private List<Message> toMessages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private Set<UserConversation> userConversations = new HashSet<>();
 }

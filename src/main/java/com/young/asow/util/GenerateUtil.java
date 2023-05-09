@@ -4,7 +4,7 @@ import java.math.BigInteger;
 
 public class GenerateUtil {
 
-    public static String generateMessageId(String originalString, String additionalString) {
+    public static String generateMessageId(Long originalString, String additionalString) {
         if (additionalString.equals("")) {
             return originalString + "000001";
         }

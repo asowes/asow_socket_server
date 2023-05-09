@@ -12,8 +12,19 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     /**
      * 获取当前用户的所有会话列表
      */
-    @Query("select cc from chat_conversation cc where cc.fromId = ?1 or cc.toId = ?1")
-    List<Conversation> findByUserId(String userId);
+//    @Query("select cc from chat_conversation cc where cc.from.id = ?1 or cc.to.id = ?1")
+    @Query("select cc from chat_conversation cc where cc.to.id = ?1")
+    List<Conversation> findByUserId(Long userId);
 
-    Optional<Conversation> findByConversationId(String conversationId);
+//    /**
+//     * 获取当前用户的所有会话列表
+//     */
+//    @Query("select c, uc.unread " +
+//            "from chat_conversation c " +
+//            "join chat_user_conversation uc " +
+//            "on uc.conversation_id = c.id " +
+//            "join user u " +
+//            "on uc.user_id = u.id " +
+//            "where u.id = 1")
+//    List<Conversation> findConversationsByUserId(Long userId);
 }

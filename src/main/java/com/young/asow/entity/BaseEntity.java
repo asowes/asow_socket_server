@@ -12,11 +12,10 @@ import java.io.Serializable;
 @ToString
 public abstract class BaseEntity implements Serializable {
 
-    //    @GeneratedValue(strategy = GenerationType.AUTO, generator = "primary-id")
-    //    @GenericGenerator(name = "primary-id", strategy = "com.young.asow.util.PrimaryIDGenerator")
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO, generator = "primary-id")
+    @GenericGenerator(name = "primary-id", strategy = "com.young.asow.util.PrimaryIDGenerator")
     @Basic(optional = false)
     @Column(name = "id", nullable = false)
     protected Long id;

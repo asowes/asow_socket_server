@@ -14,7 +14,7 @@ public class MessageModal {
 
     String messageId;
 
-    String conversationId;
+    Long conversationId;
 
     String fromId;
 
