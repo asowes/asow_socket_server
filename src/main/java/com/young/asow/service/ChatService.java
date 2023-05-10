@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ public class ChatService {
         this.userConversationRepository = userConversationRepository;
     }
 
-    public List<ConversationModal> getConversations2(Long userId) {
+    public List<ConversationModal> getConversations(Long userId) {
         List<UserConversation> userConversations = userConversationRepository.findByUserId(userId);
         List<ConversationModal> modals = new ArrayList<>();
 
@@ -53,10 +54,13 @@ public class ChatService {
             Conversation conversation = userConversation.getConversation();
             User from = conversation.getFrom();
             User to = conversation.getTo();
+            Message last = conversation.getLastMessage();
+
             ConversationModal modal = ConvertUtil.Conversation2Modal(conversation);
             modal.setUnread(userConversation.getUnread());
             modal.setFrom(ConvertUtil.User2Modal(from));
             modal.setTo(ConvertUtil.User2Modal(to));
+            modal.setLastMessage(ConvertUtil.Message2Modal(last));
             modals.add(modal);
         }
 
@@ -64,71 +68,57 @@ public class ChatService {
     }
 
 
-    public List<ConversationModal> getConversations(Long userId) {
-        // TODO  conversation同一个会话应该要有两条数据，且他们的conversationId是一样的
-        //  fromId -> toId
-        //  toId   -> fromId
-        //  通过conversationId以及fromId即可查询出自己的conversation，这样就能取到unread
-
-        // TODO 或者设计user与conversation的表chat_user_conversation 添加unread
-        //  通过conversationId以及fromId查询该关联表查询自己的unread
-        List<Conversation> dbConversations = this.conversationRepository.findByUserId(userId);
-
-        return dbConversations.stream()
-                .map(conversation -> {
-                    ConversationModal modal = ConvertUtil.Conversation2Modal(conversation);
-
-                    User to = conversation.getTo();
-//                    User from = conversation.getFrom();
-                    Message message = conversation.getLastMessage();
-
-                    modal.setTo(ConvertUtil.User2Modal(to));
-//                    modal.setFrom(ConvertUtil.User2Modal(from));
-                    modal.setLastMessage(ConvertUtil.Message2Modal(message));
-
-                    return modal;
-                })
-                .collect(Collectors.toList());
-    }
-
-    public List<MessageModal> getConversationMessages(String conversationId) {
-        Sort sort = Sort.by(Sort.Direction.ASC, "messageId");
+    public List<MessageModal> getConversationMessages(Long conversationId) {
+        // 先从数据库根据id降序排列拿到最近的消息，然后将这些数据升序排列以保证前端看到的是自上而下的
+        // page往上增加就相当于获取上一段记录
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(0, 100, sort);
         return messageRepository
                 .findMessagesByConversationId(pageable, conversationId)
                 .stream()
                 .map(ConvertUtil::Message2Modal)
+                .sorted(Comparator.comparing(MessageModal::getId))
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void saveMessageWithConversation(MessageModal messageModal) {
+    public void saveMessageWithConversation(MessageModal messageModal, Long fromId) {
+        Long findConversationId = messageModal.getConversationId();
+        Long toId = messageModal.getToId();
+
+        Conversation dbConversation = conversationRepository.findById(findConversationId)
+                .orElseThrow(() -> new BusinessException("[" + findConversationId + "]" + " is not found"));
+
+        User from = userRepository.findById(fromId)
+                .orElseThrow(() -> new BusinessException("[" + fromId + "]" + " is not found"));
+
+        User to = userRepository.findById(toId)
+                .orElseThrow(() -> new BusinessException("[" + toId + "]" + " is not found"));
+
         Message message = new Message();
 
         // 将原本的最后一条消息的isLatest设置成false
-        Long findConversationId = messageModal.getConversationId();
-        Message lastMessage = messageRepository.findByConversationIdAndIsLatest(findConversationId, true)
-                .orElseThrow(() -> new BusinessException("[" + findConversationId + "]" + " is not found"));
-        lastMessage.setIsLatest(false);
-        messageRepository.save(lastMessage);
+        dbConversation.getLastMessage().setIsLatest(false);
 
         // 保存本次消息，并设置为最后一条消息
-        String newMessageId = GenerateUtil.generateMessageId(findConversationId, lastMessage.getMessageId());
-        message.setMessageId(newMessageId);
         message.setIsLatest(true);
-//        message.setConversationId(findConversationId);
-//        message.setFromId(messageModal.getFromId());
-//        message.setToId(messageModal.getToId());
+        message.setConversation(dbConversation);
+        message.setFrom(from);
+        message.setTo(to);
         message.setSendTime(messageModal.getSendTime());
         message.setType(messageModal.getType());
         message.setContent(messageModal.getContent());
         messageRepository.save(message);
 
         // 将最后一条消息的id绑定到会话中
-        Conversation dbConversation = conversationRepository.findById(findConversationId)
-                .orElseThrow(() -> new BusinessException("[" + findConversationId + "]" + " is not found"));
-//        dbConversation.setLastMessageId(newMessageId);
-//        dbConversation.addUnread();
+        dbConversation.setLastMessage(message);
         conversationRepository.save(dbConversation);
+
+        // 给对方增加未读数量
+        UserConversation userConversation =
+                userConversationRepository.findByUserIdAndConversationId(toId, dbConversation.getId());
+        userConversation.setUnread(userConversation.getUnread() + 1);
+        userConversationRepository.save(userConversation);
+
     }
 }

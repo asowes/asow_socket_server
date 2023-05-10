@@ -23,6 +23,9 @@ public class UserConversation {
     @JoinColumn(name = "conversation_id")
     private Conversation conversation;
 
+    /**
+     * 当前登陆用户
+     */
     @ManyToOne
     @MapsId("userId")
     @JoinColumn(name = "user_id")

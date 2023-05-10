@@ -123,12 +123,13 @@ public class WebSocketServer {
 
 //        clientMessage.setLoading(false);
         // 发给目标
-        sendMessageByWayBillId(clientMessage.getToId(), JSONObject.toJSONString(clientMessage));
+        sendMessageByWayBillId(clientMessage.getToId().toString(), JSONObject.toJSONString(clientMessage));
         // 发给自己
-        sendMessageByWayBillId(clientMessage.getFromId(), JSONObject.toJSONString(clientMessage));
+        sendMessageByWayBillId(clientMessage.getFromId().toString(), JSONObject.toJSONString(clientMessage));
 
         // 保存消息到数据库，刷新列表时加载 应该要等发送成功再保存
-        webSocketService.saveMessageWithConversation(clientMessage);
+        Long userId = JWTUtil.getUserId(token);
+        webSocketService.saveMessageWithConversation(clientMessage, userId);
     }
 
     private void handleNotify() {

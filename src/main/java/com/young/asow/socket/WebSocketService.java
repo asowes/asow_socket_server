@@ -14,7 +14,7 @@ public class WebSocketService {
     }
 
 
-    public void saveMessageWithConversation(MessageModal message) {
-        this.chatService.saveMessageWithConversation(message);
+    public void saveMessageWithConversation(MessageModal message, Long fromId) {
+        this.chatService.saveMessageWithConversation(message, fromId);
     }
 }

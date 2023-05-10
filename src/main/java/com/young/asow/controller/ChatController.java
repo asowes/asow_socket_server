@@ -32,9 +32,18 @@ public class ChatController {
 
     @GetMapping("/conversations/{conversationId}/messages")
     public RestResponse<List<MessageModal>> getConversationMessages(
-            @PathVariable String conversationId
+            @PathVariable Long conversationId
     ) {
         List<MessageModal> modals = chatService.getConversationMessages(conversationId);
         return RestResponse.ok(modals);
+    }
+
+    @PostMapping("/save/message")
+    public void sendMessage(
+            @RequestHeader("authorization") String token,
+            @RequestBody MessageModal messageModal
+    ) {
+        Long fromId = JWTUtil.getUserId(token);
+        chatService.saveMessageWithConversation(messageModal, fromId);
     }
 }

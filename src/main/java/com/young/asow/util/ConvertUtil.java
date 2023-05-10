@@ -26,6 +26,8 @@ public class ConvertUtil {
     public static MessageModal Message2Modal(Message message) {
         MessageModal modal = new MessageModal();
         BeanUtils.copyProperties(message, modal);
+        modal.setFromId(message.getFrom().getId());
+        modal.setToId(message.getTo().getId());
         return modal;
     }
 }

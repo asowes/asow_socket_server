@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MessageModal {
+    Long id;
 
     String event;
 
@@ -16,9 +17,9 @@ public class MessageModal {
 
     Long conversationId;
 
-    String fromId;
+    Long fromId;
 
-    String toId;
+    Long toId;
 
     LocalDateTime sendTime;
 
