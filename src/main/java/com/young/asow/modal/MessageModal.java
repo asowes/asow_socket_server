@@ -2,14 +2,14 @@ package com.young.asow.modal;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MessageModal {
-    Long id;
+public class MessageModal extends LastMessage {
 
     String event;
 
@@ -21,13 +21,11 @@ public class MessageModal {
 
     Long toId;
 
-    LocalDateTime sendTime;
-
-    String content;
-
     String type;
 
     Boolean isLatest;
+
+    int unread;
 
     Boolean loading;
 

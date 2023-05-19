@@ -20,10 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -60,7 +57,7 @@ public class ChatService {
             modal.setUnread(userConversation.getUnread());
             modal.setFrom(ConvertUtil.User2Modal(from));
             modal.setTo(ConvertUtil.User2Modal(to));
-            modal.setLastMessage(ConvertUtil.Message2Modal(last));
+            modal.setLastMessage(ConvertUtil.Message2LastMessage(last));
             modals.add(modal);
         }
 
@@ -82,7 +79,7 @@ public class ChatService {
     }
 
     @Transactional
-    public void saveMessageWithConversation(MessageModal messageModal, Long fromId) {
+    public UserConversation saveMessageWithConversation(MessageModal messageModal, Long fromId) {
         Long findConversationId = messageModal.getConversationId();
         Long toId = messageModal.getToId();
 
@@ -98,7 +95,9 @@ public class ChatService {
         Message message = new Message();
 
         // 将原本的最后一条消息的isLatest设置成false
-        dbConversation.getLastMessage().setIsLatest(false);
+        if (Objects.nonNull(dbConversation.getLastMessage())) {
+            dbConversation.getLastMessage().setIsLatest(false);
+        }
 
         // 保存本次消息，并设置为最后一条消息
         message.setIsLatest(true);
@@ -118,7 +117,14 @@ public class ChatService {
         UserConversation userConversation =
                 userConversationRepository.findByUserIdAndConversationId(toId, dbConversation.getId());
         userConversation.setUnread(userConversation.getUnread() + 1);
-        userConversationRepository.save(userConversation);
+        return userConversationRepository.save(userConversation);
+    }
 
+
+    public void readMessage(Long userId, Long conversationId) {
+        UserConversation userConversation =
+                userConversationRepository.findByUserIdAndConversationId(userId, conversationId);
+        userConversation.setUnread(0);
+        userConversationRepository.save(userConversation);
     }
 }

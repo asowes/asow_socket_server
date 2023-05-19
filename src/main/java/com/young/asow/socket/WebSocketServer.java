@@ -2,6 +2,7 @@ package com.young.asow.socket;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.young.asow.entity.UserConversation;
 import com.young.asow.modal.MessageModal;
 import com.young.asow.response.RestResponse;
 import com.young.asow.service.ChatService;
@@ -117,19 +118,19 @@ public class WebSocketServer {
     }
 
     private void handleChat(MessageModal clientMessage) {
+        // 保存消息到数据库，刷新列表时加载   初步定下来：等保存成功再发送
+        Long userId = JWTUtil.getUserId(token);
+        UserConversation userConversation = webSocketService.saveMessageWithConversation(clientMessage, userId);
 
         //  发给自己，可以看作是系统消息
 //            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
-
-//        clientMessage.setLoading(false);
-        // 发给目标
-        sendMessageByWayBillId(clientMessage.getToId().toString(), JSONObject.toJSONString(clientMessage));
         // 发给自己
         sendMessageByWayBillId(clientMessage.getFromId().toString(), JSONObject.toJSONString(clientMessage));
 
-        // 保存消息到数据库，刷新列表时加载 应该要等发送成功再保存
-        Long userId = JWTUtil.getUserId(token);
-        webSocketService.saveMessageWithConversation(clientMessage, userId);
+        // 发给目标
+        // 给目标增加未读
+        clientMessage.setUnread(userConversation.getUnread());
+        sendMessageByWayBillId(clientMessage.getToId().toString(), JSONObject.toJSONString(clientMessage));
     }
 
     private void handleNotify() {

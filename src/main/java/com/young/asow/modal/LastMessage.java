@@ -8,20 +8,10 @@ import java.time.LocalDateTime;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ConversationModal {
+public class LastMessage {
     Long id;
 
-    String conversationId;
+    String content;
 
-    UserInfoModal to;
-
-    UserInfoModal from;
-
-    LastMessage lastMessage;
-
-    LocalDateTime createTime;
-
-    int unread;
-
-    String topPriority;
+    LocalDateTime sendTime;
 }

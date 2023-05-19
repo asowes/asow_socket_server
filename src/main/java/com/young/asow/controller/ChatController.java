@@ -46,4 +46,14 @@ public class ChatController {
         Long fromId = JWTUtil.getUserId(token);
         chatService.saveMessageWithConversation(messageModal, fromId);
     }
+
+    @PostMapping("/read/{conversationId}")
+    public RestResponse<?> readMessage(
+            @RequestHeader("authorization") String token,
+            @PathVariable Long conversationId
+    ) {
+        Long userId = JWTUtil.getUserId(token);
+        chatService.readMessage(userId, conversationId);
+        return RestResponse.ok();
+    }
 }
