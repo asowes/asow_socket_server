@@ -3,6 +3,7 @@ package com.young.asow.socket;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.young.asow.entity.UserConversation;
+import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.MessageModal;
 import com.young.asow.response.RestResponse;
 import com.young.asow.service.ChatService;
@@ -146,6 +147,10 @@ public class WebSocketServer {
     @OnError
     public void onError(Session session, Throwable error) throws IOException {
         log.error("websocket编号uid错误: " + this.uid + "原因: " + error.getMessage());
+        MessageModal sm = new MessageModal();
+        sm.setEvent("error");
+        sm.setContent(error.getMessage());
+        session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
         error.printStackTrace();
     }
 
