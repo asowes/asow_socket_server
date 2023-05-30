@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 public class LastMessage {
     Long id;
 
+    String type;
+
     String content;
 
     LocalDateTime sendTime;

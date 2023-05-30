@@ -30,10 +30,7 @@ public class Message extends BaseEntity {
 
     // 消息类型  1：普通消息  2：图片  3：视频
     @Column
-    String type;
-
-    @Column
-    Boolean isLatest;
+    ContentType type;
 
     @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinColumn(name = "from_id")
@@ -47,4 +44,9 @@ public class Message extends BaseEntity {
     @JoinColumn(name = "conversation_id")
     private Conversation conversation;
 
+
+    public enum ContentType {
+        TEXT,
+        IMAGE;
+    }
 }

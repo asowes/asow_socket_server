@@ -12,7 +12,6 @@ import com.young.asow.repository.MessageRepository;
 import com.young.asow.repository.UserConversationRepository;
 import com.young.asow.repository.UserRepository;
 import com.young.asow.util.ConvertUtil;
-import com.young.asow.util.GenerateUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
@@ -79,7 +78,7 @@ public class ChatService {
     }
 
     @Transactional
-    public UserConversation saveMessageWithConversation(MessageModal messageModal, Long fromId) {
+    public MessageModal saveMessageWithConversation(MessageModal messageModal, Long fromId) {
         Long findConversationId = messageModal.getConversationId();
         Long toId = messageModal.getToId();
 
@@ -94,18 +93,12 @@ public class ChatService {
 
         Message message = new Message();
 
-        // 将原本的最后一条消息的isLatest设置成false
-        if (Objects.nonNull(dbConversation.getLastMessage())) {
-            dbConversation.getLastMessage().setIsLatest(false);
-        }
-
         // 保存本次消息，并设置为最后一条消息
-        message.setIsLatest(true);
         message.setConversation(dbConversation);
         message.setFrom(from);
         message.setTo(to);
         message.setSendTime(messageModal.getSendTime());
-        message.setType(messageModal.getType());
+        message.setType(Message.ContentType.valueOf(messageModal.getType()));
         message.setContent(messageModal.getContent());
         messageRepository.save(message);
 
@@ -117,7 +110,11 @@ public class ChatService {
         UserConversation userConversation =
                 userConversationRepository.findByUserIdAndConversationId(toId, dbConversation.getId());
         userConversation.setUnread(userConversation.getUnread() + 1);
-        return userConversationRepository.save(userConversation);
+
+        MessageModal modal = new MessageModal();
+        modal.setUnread(userConversation.getUnread());
+        modal.setId(message.getId());
+        return modal;
     }
 
 

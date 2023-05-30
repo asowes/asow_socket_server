@@ -13,17 +13,11 @@ public class MessageModal extends LastMessage {
 
     String event;
 
-    String messageId;
-
     Long conversationId;
 
     Long fromId;
 
     Long toId;
-
-    String type;
-
-    Boolean isLatest;
 
     int unread;
 

@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 public class ConversationModal {
     Long id;
 
-    String conversationId;
-
     UserInfoModal to;
 
     UserInfoModal from;

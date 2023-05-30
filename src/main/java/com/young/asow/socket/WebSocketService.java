@@ -1,6 +1,5 @@
 package com.young.asow.socket;
 
-import com.young.asow.entity.UserConversation;
 import com.young.asow.modal.MessageModal;
 import com.young.asow.service.ChatService;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,7 @@ public class WebSocketService {
     }
 
 
-    public UserConversation saveMessageWithConversation(MessageModal message, Long fromId) {
+    public MessageModal saveMessageWithConversation(MessageModal message, Long fromId) {
         return chatService.saveMessageWithConversation(message, fromId);
     }
 }

@@ -34,6 +34,7 @@ public class ConvertUtil {
         BeanUtils.copyProperties(message, modal);
         modal.setFromId(message.getFrom().getId());
         modal.setToId(message.getTo().getId());
+        modal.setConversationId(message.getConversation().getId());
         return modal;
     }
 

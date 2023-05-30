@@ -98,14 +98,14 @@ public class WebSocketServer {
 
     private void handleMessageWithType(MessageModal clientMessage, Session session) throws IOException {
         switch (clientMessage.getEvent()) {
+            case "heartbeat":
+                handlePing(session);
+                break;
             case "chat":
                 handleChat(clientMessage);
                 break;
             case "notify":
                 handleNotify();
-                break;
-            default:
-                handlePing(session);
                 break;
         }
     }
@@ -121,16 +121,17 @@ public class WebSocketServer {
     private void handleChat(MessageModal clientMessage) {
         // 保存消息到数据库，刷新列表时加载   初步定下来：等保存成功再发送
         Long userId = JWTUtil.getUserId(token);
-        UserConversation userConversation = webSocketService.saveMessageWithConversation(clientMessage, userId);
+        MessageModal dbModal = webSocketService.saveMessageWithConversation(clientMessage, userId);
 
         //  发给自己，可以看作是系统消息
 //            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
         // 发给自己
+        clientMessage.setId(dbModal.getId());
         sendMessageByWayBillId(clientMessage.getFromId().toString(), JSONObject.toJSONString(clientMessage));
 
         // 发给目标
         // 给目标增加未读
-        clientMessage.setUnread(userConversation.getUnread());
+        clientMessage.setUnread(dbModal.getUnread());
         sendMessageByWayBillId(clientMessage.getToId().toString(), JSONObject.toJSONString(clientMessage));
     }
 
