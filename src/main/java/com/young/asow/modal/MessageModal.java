@@ -19,7 +19,7 @@ public class MessageModal extends LastMessage {
 
     Long toId;
 
-    int unread;
+    Integer unread;
 
     Boolean loading;
 

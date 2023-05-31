@@ -40,6 +40,9 @@ public class ConvertUtil {
 
     public static LastMessage Message2LastMessage(Message message){
         LastMessage modal = new LastMessage();
+        if (Objects.isNull(message)) {
+            return modal;
+        }
         BeanUtils.copyProperties(message, modal);
         return modal;
     }

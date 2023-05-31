@@ -58,8 +58,10 @@ public class WebSocketServer {
         }
         webSocketMap.put(String.valueOf(userId), this);
         log.info("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
+        MessageModal modal = new MessageModal();
+        modal.setContent("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         try {
-            sendMessage("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
+            sendMessage(JSONObject.toJSONString(modal));
         } catch (IOException e) {
             log.error("websocket发送连接成功错误编号uid: " + userId + "，网络异常!!!");
         }
