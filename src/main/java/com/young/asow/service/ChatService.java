@@ -7,6 +7,7 @@ import com.young.asow.entity.UserConversation;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
 import com.young.asow.modal.MessageModal;
+import com.young.asow.modal.PaginationModal;
 import com.young.asow.repository.ConversationRepository;
 import com.young.asow.repository.MessageRepository;
 import com.young.asow.repository.UserConversationRepository;
@@ -68,9 +69,9 @@ public class ChatService {
      * 先从数据库根据id降序排列拿到最近的消息，然后将这些数据升序排列以保证前端看到的是自上而下的
      * page往上增加就相当于获取上一段记录
      */
-    public List<MessageModal> getConversationMessages(Long conversationId) {
+    public List<MessageModal> getConversationMessages(Long conversationId, int page) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
-        Pageable pageable = PageRequest.of(0, 100, sort);
+        Pageable pageable = PageRequest.of(page, 15, sort);
         return messageRepository
                 .findMessagesByConversationId(pageable, conversationId)
                 .stream()

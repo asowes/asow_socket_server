@@ -4,11 +4,13 @@ package com.young.asow.controller;
 import com.young.asow.entity.Conversation;
 import com.young.asow.modal.ConversationModal;
 import com.young.asow.modal.MessageModal;
+import com.young.asow.modal.PaginationModal;
 import com.young.asow.service.ChatService;
 import com.young.asow.util.auth.JWTUtil;
 import org.springframework.web.bind.annotation.*;
 import com.young.asow.response.RestResponse;
 
+import javax.websocket.server.PathParam;
 import java.util.List;
 
 @RestController
@@ -32,9 +34,10 @@ public class ChatController {
 
     @GetMapping("/conversations/{conversationId}/messages")
     public RestResponse<List<MessageModal>> getConversationMessages(
-            @PathVariable Long conversationId
+            @PathVariable Long conversationId,
+            @RequestParam(name = "page", defaultValue = "0") int page
     ) {
-        List<MessageModal> modals = chatService.getConversationMessages(conversationId);
+        List<MessageModal> modals = chatService.getConversationMessages(conversationId, page);
         return RestResponse.ok(modals);
     }
 
