@@ -54,6 +54,13 @@ public class User extends BaseEntity {
 //    @OneToMany(mappedBy = "to", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
 //    private List<Message> toMessages = new ArrayList<>();
 
+    @OneToMany(mappedBy = "sender", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    private List<FriendApply> sendApplies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "accepter", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    private List<FriendApply> acceptApplies = new ArrayList<>();
+
+
     @OneToMany(mappedBy = "user")
     private Set<UserConversation> userConversations = new HashSet<>();
 }

@@ -109,6 +109,9 @@ public class WebSocketServer {
             case "notify":
                 handleNotify();
                 break;
+            case "friend_apply":
+                handleFriendApply(clientMessage);
+                break;
         }
     }
 
@@ -137,8 +140,13 @@ public class WebSocketServer {
         sendMessageByWayBillId(clientMessage.getToId().toString(), JSONObject.toJSONString(clientMessage));
     }
 
+    // TODO
     private void handleNotify() {
+    }
+
+    private void handleFriendApply(MessageModal clientMessage) {
         // TODO
+        Long userId = JWTUtil.getUserId(token);
     }
 
     /**

@@ -1,26 +1,25 @@
 package com.young.asow.service;
 
-import com.young.asow.entity.Conversation;
-import com.young.asow.entity.Message;
-import com.young.asow.entity.User;
-import com.young.asow.entity.UserConversation;
+import com.young.asow.entity.*;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
+import com.young.asow.modal.FriendApplyModal;
 import com.young.asow.modal.MessageModal;
-import com.young.asow.modal.PaginationModal;
-import com.young.asow.repository.ConversationRepository;
-import com.young.asow.repository.MessageRepository;
-import com.young.asow.repository.UserConversationRepository;
-import com.young.asow.repository.UserRepository;
+import com.young.asow.modal.UserInfoModal;
+import com.young.asow.repository.*;
 import com.young.asow.util.ConvertUtil;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -30,17 +29,20 @@ public class ChatService {
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final UserConversationRepository userConversationRepository;
+    private final FriendApplyRepository friendApplyRepository;
 
     public ChatService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
             MessageRepository messageRepository,
-            UserConversationRepository userConversationRepository
+            UserConversationRepository userConversationRepository,
+            FriendApplyRepository friendApplyRepository
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.userConversationRepository = userConversationRepository;
+        this.friendApplyRepository = friendApplyRepository;
     }
 
     public List<ConversationModal> getConversations(Long userId) {
@@ -126,5 +128,73 @@ public class ChatService {
                 userConversationRepository.findByUserIdAndConversationId(userId, conversationId);
         userConversation.setUnread(0);
         userConversationRepository.save(userConversation);
+    }
+
+
+    public List<UserInfoModal> searchUsers(String keyword) {
+        // todo 查找的数据要返回是否添加过好友状态
+        return userRepository.findByKeyword(keyword)
+                .stream()
+                .map(ConvertUtil::User2Modal)
+                .collect(Collectors.toList());
+    }
+
+
+    public void applyFriend(Long userId, Long accepterId) {
+        User sender = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
+
+        User accepter = userRepository.findById(accepterId)
+                .orElseThrow(() -> new BusinessException("[" + accepterId + "]" + " is not found"));
+
+        // 先判断是否已经是好友
+        List<FriendApply> friendApplyList = friendApplyRepository.findFriendApply(userId, accepterId);
+        boolean hasApplying = friendApplyList
+                .stream()
+                .filter(friendApply ->
+                        FriendApply.STATUS.APPLYING.equals(friendApply.getStatus()))
+                .count() == 1;
+        if (hasApplying) {
+            throw new BusinessException("用户已经发送过好友请求了");
+        }
+
+        boolean hasAccept = friendApplyList
+                .stream().anyMatch(friendApply ->
+                        FriendApply.STATUS.ACCEPT.equals(friendApply.getStatus()));
+        if (hasAccept) {
+            throw new BusinessException("用户已经添加过该好友了");
+        }
+
+        FriendApply friendApply = new FriendApply();
+        friendApply.setSender(sender);
+        friendApply.setAccepter(accepter);
+        friendApply.setApplyTime(LocalDateTime.now());
+        friendApply.setStatus(FriendApply.STATUS.APPLYING);
+        friendApplyRepository.save(friendApply);
+    }
+
+    public List<FriendApplyModal> getMyFriendApply(Long userId) {
+        User my = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
+
+        return my.getAcceptApplies()
+                .stream()
+                .map(ac -> ConvertUtil.FriendApply2Modal(ac.getSender(), ac))
+                .collect(Collectors.toList());
+    }
+
+    public void handleFriendApply(Long userId, Long senderId, FriendApplyModal modal) {
+        FriendApply friendApply = friendApplyRepository.findApplying(senderId, userId)
+                .orElseThrow(() -> new BusinessException("你没有发起过该好友请求"));
+
+        FriendApply.STATUS status = FriendApply.STATUS.valueOf(modal.getStatus());
+
+        if (Objects.equals(FriendApply.STATUS.APPLYING, status)) {
+            throw new BusinessException("参数异常");
+        }
+
+
+        friendApply.setStatus(status);
+        friendApplyRepository.save(friendApply);
     }
 }

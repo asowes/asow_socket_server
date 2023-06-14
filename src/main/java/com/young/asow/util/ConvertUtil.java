@@ -2,12 +2,10 @@ package com.young.asow.util;
 
 
 import com.young.asow.entity.Conversation;
+import com.young.asow.entity.FriendApply;
 import com.young.asow.entity.Message;
 import com.young.asow.entity.User;
-import com.young.asow.modal.ConversationModal;
-import com.young.asow.modal.LastMessage;
-import com.young.asow.modal.MessageModal;
-import com.young.asow.modal.UserInfoModal;
+import com.young.asow.modal.*;
 import org.springframework.beans.BeanUtils;
 
 import java.util.Objects;
@@ -38,12 +36,21 @@ public class ConvertUtil {
         return modal;
     }
 
-    public static LastMessage Message2LastMessage(Message message){
+    public static LastMessage Message2LastMessage(Message message) {
         LastMessage modal = new LastMessage();
         if (Objects.isNull(message)) {
             return modal;
         }
         BeanUtils.copyProperties(message, modal);
+        return modal;
+    }
+
+    public static FriendApplyModal FriendApply2Modal(User user, FriendApply friendApply) {
+        FriendApplyModal modal = new FriendApplyModal();
+        BeanUtils.copyProperties(user, modal);
+
+        modal.setId(friendApply.getId());
+        modal.setStatus(friendApply.getStatus().name());
         return modal;
     }
 }
