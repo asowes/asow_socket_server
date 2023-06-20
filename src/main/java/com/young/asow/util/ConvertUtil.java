@@ -9,27 +9,36 @@ import com.young.asow.modal.*;
 import org.springframework.beans.BeanUtils;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class ConvertUtil {
 
+    public static <S, T> T convert(S source, Class<T> targetClass, Supplier<T> defaultValueSupplier) {
+        try {
+            T target = targetClass.getDeclaredConstructor().newInstance();
+            if (source != null) {
+                BeanUtils.copyProperties(source, target);
+                return target;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return defaultValueSupplier.get();
+    }
+
     public static ConversationModal Conversation2Modal(Conversation conversation) {
-        ConversationModal modal = new ConversationModal();
-        BeanUtils.copyProperties(conversation, modal);
-        return modal;
+        return convert(conversation, ConversationModal.class, ConversationModal::new);
     }
 
     public static UserInfoModal User2Modal(User user) {
-        UserInfoModal modal = new UserInfoModal();
-        BeanUtils.copyProperties(user, modal);
-        return modal;
+        return convert(user, UserInfoModal.class, UserInfoModal::new);
     }
 
     public static MessageModal Message2Modal(Message message) {
-        MessageModal modal = new MessageModal();
+        MessageModal modal = convert(message, MessageModal.class, MessageModal::new);
         if (Objects.isNull(message)) {
             return modal;
         }
-        BeanUtils.copyProperties(message, modal);
         modal.setFromId(message.getFrom().getId());
         modal.setToId(message.getTo().getId());
         modal.setConversationId(message.getConversation().getId());
@@ -37,18 +46,11 @@ public class ConvertUtil {
     }
 
     public static LastMessage Message2LastMessage(Message message) {
-        LastMessage modal = new LastMessage();
-        if (Objects.isNull(message)) {
-            return modal;
-        }
-        BeanUtils.copyProperties(message, modal);
-        return modal;
+        return convert(message, LastMessage.class, LastMessage::new);
     }
 
     public static FriendApplyModal FriendApply2Modal(User user, FriendApply friendApply) {
-        FriendApplyModal modal = new FriendApplyModal();
-        BeanUtils.copyProperties(user, modal);
-
+        FriendApplyModal modal = convert(user, FriendApplyModal.class, FriendApplyModal::new);
         modal.setId(friendApply.getId());
         modal.setStatus(friendApply.getStatus().name());
         return modal;
