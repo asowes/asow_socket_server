@@ -19,7 +19,7 @@ public class GlobalExceptionHandle {
     }
 
     @ExceptionHandler({RuntimeException.class})
-    public ResponseEntity<Object> handleRuntimeException(BusinessException ex) {
+    public ResponseEntity<Object> handleRuntimeException(RuntimeException ex) {
         RestResponse restResponse = RestResponse.fail(ex.getMessage());
         return new ResponseEntity(restResponse, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR);
     }

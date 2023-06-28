@@ -7,12 +7,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 
-@Entity(name = "chat_user_conversation")
+@Entity
+@Table(name = "chat_user_conversation")
 @Getter
 @Setter
 @EqualsAndHashCode
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class UserConversation {
 
     @EmbeddedId

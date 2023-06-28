@@ -28,8 +28,7 @@ public class Authority implements GrantedAuthority {
     public enum ROLE {
         USER,
         ADMIN,
-        SUPER_ADMIN
-        ;
+        SUPER_ADMIN;
 
         private static final String ROLE_AUTHORITY_PREFIX = "ROLE_";
 
@@ -39,11 +38,16 @@ public class Authority implements GrantedAuthority {
     }
 
     @Override
-    public boolean equals(@Nullable Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        Authority that = (Authority) o;
-        return getAuthority() != null && Objects.equals(getAuthority(), that.getAuthority());
+        if (o == null || getClass() != o.getClass()) return false;
+        Authority authority1 = (Authority) o;
+        return Objects.equals(authority, authority1.authority);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(authority);
     }
 
 }

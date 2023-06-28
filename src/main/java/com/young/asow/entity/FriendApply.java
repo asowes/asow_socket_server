@@ -33,9 +33,10 @@ public class FriendApply extends BaseEntity {
     LocalDateTime operateTime;
 
     public enum STATUS {
+        STRANGE,
         APPLYING,
-        ACCEPT,
-        REFUSE;
+        ACCEPTED,
+        REFUSED;
     }
 
 }

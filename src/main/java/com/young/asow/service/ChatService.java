@@ -5,7 +5,6 @@ import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
 import com.young.asow.modal.FriendApplyModal;
 import com.young.asow.modal.MessageModal;
-import com.young.asow.modal.UserInfoModal;
 import com.young.asow.repository.*;
 import com.young.asow.util.ConvertUtil;
 import lombok.extern.log4j.Log4j2;
@@ -13,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
@@ -131,23 +131,33 @@ public class ChatService {
     }
 
 
-    public List<UserInfoModal> searchUsers(String keyword) {
-        // todo 查找的数据要返回是否添加过好友状态
+    // ********************************** 放到另一个service
+
+    public List<FriendApplyModal> searchUsers(Long meId, String keyword) {
         return userRepository.findByKeyword(keyword)
                 .stream()
-                .map(ConvertUtil::User2Modal)
+                .map(findUser -> {
+                    FriendApply friendApply =
+                            friendApplyRepository.relationship(meId, findUser.getId())
+                                    .orElse(null);
+
+                    return ConvertUtil.FriendApply2Modal(findUser, friendApply);
+                })
                 .collect(Collectors.toList());
     }
 
 
+    @Transactional
     public void applyFriend(Long userId, Long accepterId) {
+        Assert.isTrue(!Objects.equals(userId, accepterId), "不能添加自己为好友");
+
         User sender = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
 
         User accepter = userRepository.findById(accepterId)
                 .orElseThrow(() -> new BusinessException("[" + accepterId + "]" + " is not found"));
 
-        // 先判断是否已经是好友
+        // 判断向对方是否发送过好友请求
         List<FriendApply> friendApplyList = friendApplyRepository.findFriendApply(userId, accepterId);
         boolean hasApplying = friendApplyList
                 .stream()
@@ -158,32 +168,56 @@ public class ChatService {
             throw new BusinessException("用户已经发送过好友请求了");
         }
 
-        boolean hasAccept = friendApplyList
-                .stream().anyMatch(friendApply ->
-                        FriendApply.STATUS.ACCEPT.equals(friendApply.getStatus()));
+        // 判断两人是否已经是好友
+        List<FriendApply> friendAcceptList = friendApplyRepository.findFriendApply(accepterId, userId);
+        boolean hasAccept =
+                friendApplyList
+                        .stream()
+                        .anyMatch(friendApply ->
+                                FriendApply.STATUS.ACCEPTED.equals(friendApply.getStatus())) ||
+                        friendAcceptList
+                                .stream()
+                                .anyMatch(friendApply ->
+                                        FriendApply.STATUS.ACCEPTED.equals(friendApply.getStatus())
+                                );
         if (hasAccept) {
             throw new BusinessException("用户已经添加过该好友了");
         }
 
-        FriendApply friendApply = new FriendApply();
-        friendApply.setSender(sender);
-        friendApply.setAccepter(accepter);
-        friendApply.setApplyTime(LocalDateTime.now());
-        friendApply.setStatus(FriendApply.STATUS.APPLYING);
-        friendApplyRepository.save(friendApply);
+        // 如果对方也正在申请添加自己为好友，那么不用等对方通过直接添加好友
+        friendApplyRepository.relationship(accepterId, userId)
+                .ifPresentOrElse(friendApply -> {
+                    if (!FriendApply.STATUS.APPLYING.equals(friendApply.getStatus())) {
+                        return;
+                    }
+                    friendApply.setStatus(FriendApply.STATUS.ACCEPTED);
+                    friendApplyRepository.save(friendApply);
+                    becomeFriendCreateConversation(sender, accepter);
+                }, () -> {
+                    FriendApply friendApply = new FriendApply();
+                    friendApply.setSender(sender);
+                    friendApply.setAccepter(accepter);
+                    friendApply.setApplyTime(LocalDateTime.now());
+                    friendApply.setStatus(FriendApply.STATUS.APPLYING);
+                    friendApplyRepository.save(friendApply);
+                });
     }
 
     public List<FriendApplyModal> getMyFriendApply(Long userId) {
-        User my = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
-
-        return my.getAcceptApplies()
+        return friendApplyRepository.findLatestByAccepterId(userId)
                 .stream()
                 .map(ac -> ConvertUtil.FriendApply2Modal(ac.getSender(), ac))
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public void handleFriendApply(Long userId, Long senderId, FriendApplyModal modal) {
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new BusinessException("[" + senderId + "]" + " is not found"));
+
+        User accepter = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
+
         FriendApply friendApply = friendApplyRepository.findApplying(senderId, userId)
                 .orElseThrow(() -> new BusinessException("你没有发起过该好友请求"));
 
@@ -193,8 +227,41 @@ public class ChatService {
             throw new BusinessException("参数异常");
         }
 
-
         friendApply.setStatus(status);
+        friendApply.setOperateTime(LocalDateTime.now());
         friendApplyRepository.save(friendApply);
+        becomeFriendCreateConversation(sender, accepter);
     }
+
+
+    private void becomeFriendCreateConversation(User sender, User accepter) {
+        Conversation conversation = new Conversation();
+        conversation.setCreateTime(LocalDateTime.now());
+        conversation.setFrom(sender);
+        conversation.setTo(accepter);
+        Conversation dbConversation = conversationRepository.save(conversation);
+
+        UserConversation sendConversation = createUserConversation(sender, dbConversation);
+        UserConversation acceptConversation = createUserConversation(accepter, dbConversation);
+
+        dbConversation.getUserConversations().add(sendConversation);
+        dbConversation.getUserConversations().add(acceptConversation);
+        conversationRepository.save(dbConversation);
+    }
+
+    private UserConversation createUserConversation(User user, Conversation conversation) {
+        UserConversation userConversation = new UserConversation();
+
+        UserConversationId userConversationId = new UserConversationId();
+        userConversationId.setConversationId(conversation.getId());
+        userConversationId.setUserId(user.getId());
+
+        userConversation.setUser(user);
+        userConversation.setId(userConversationId);
+        userConversation.setConversation(conversation);
+        userConversation.setUnread(0);
+        return userConversation;
+    }
+
+
 }

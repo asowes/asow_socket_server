@@ -1,7 +1,6 @@
 package com.young.asow.controller;
 
 
-import com.young.asow.entity.FriendApply;
 import com.young.asow.modal.*;
 import com.young.asow.service.ChatService;
 import com.young.asow.service.UserService;
@@ -64,15 +63,17 @@ public class ChatController {
     }
 
     @GetMapping("/search/users")
-    public RestResponse<List<UserInfoModal>> searchUsers(
+    public RestResponse<List<FriendApplyModal>> searchUsers(
+            @RequestHeader("authorization") String token,
             @RequestParam(name = "keyword") String keyword
     ) {
-        List<UserInfoModal> modals = chatService.searchUsers(keyword);
+        Long me = JWTUtil.getUserId(token);
+        List<FriendApplyModal> modals = chatService.searchUsers(me, keyword);
         return RestResponse.ok(modals);
     }
 
 
-    @PostMapping("/friend/apply/{accepterId}")
+    @PostMapping("/send/friend/apply/{accepterId}")
     public RestResponse<?> sendFriendApply(
             @RequestHeader("authorization") String token,
             @PathVariable Long accepterId

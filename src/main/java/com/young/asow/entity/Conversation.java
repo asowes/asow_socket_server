@@ -48,6 +48,6 @@ public class Conversation extends BaseEntity {
     @JoinColumn(name = "to_id", nullable = false)
     private User to;
 
-    @OneToMany(mappedBy = "conversation")
+    @OneToMany(mappedBy = "conversation", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<UserConversation> userConversations = new ArrayList<>();
 }

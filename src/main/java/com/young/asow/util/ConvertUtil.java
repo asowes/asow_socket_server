@@ -51,6 +51,12 @@ public class ConvertUtil {
 
     public static FriendApplyModal FriendApply2Modal(User user, FriendApply friendApply) {
         FriendApplyModal modal = convert(user, FriendApplyModal.class, FriendApplyModal::new);
+        modal.setUserId(user.getId());
+        if (Objects.isNull(friendApply)) {
+            modal.setId(null);
+            modal.setStatus(FriendApply.STATUS.STRANGE.name());
+            return modal;
+        }
         modal.setId(friendApply.getId());
         modal.setStatus(friendApply.getStatus().name());
         return modal;

@@ -9,6 +9,8 @@ import lombok.experimental.FieldDefaults;
 public class UserInfoModal {
     Long id;
 
+    Long userId;
+
     String nickname;
 
     String avatar;
