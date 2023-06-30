@@ -1,12 +1,14 @@
 package com.young.asow.controller;
 
 
-import com.young.asow.modal.*;
+import com.young.asow.modal.ConversationModal;
+import com.young.asow.modal.FriendApplyModal;
+import com.young.asow.modal.MessageModal;
+import com.young.asow.response.RestResponse;
+import com.young.asow.service.ApplyFriendService;
 import com.young.asow.service.ChatService;
-import com.young.asow.service.UserService;
 import com.young.asow.util.auth.JWTUtil;
 import org.springframework.web.bind.annotation.*;
-import com.young.asow.response.RestResponse;
 
 import java.util.List;
 
@@ -15,14 +17,14 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
-    private final UserService userService;
+    private final ApplyFriendService applyFriendService;
 
     public ChatController(
             ChatService chatService,
-            UserService userService
+            ApplyFriendService applyFriendService
     ) {
         this.chatService = chatService;
-        this.userService = userService;
+        this.applyFriendService = applyFriendService;
     }
 
     @GetMapping("/conversations")
@@ -68,7 +70,7 @@ public class ChatController {
             @RequestParam(name = "keyword") String keyword
     ) {
         Long me = JWTUtil.getUserId(token);
-        List<FriendApplyModal> modals = chatService.searchUsers(me, keyword);
+        List<FriendApplyModal> modals = applyFriendService.searchUsers(me, keyword);
         return RestResponse.ok(modals);
     }
 
@@ -79,7 +81,7 @@ public class ChatController {
             @PathVariable Long accepterId
     ) {
         Long userId = JWTUtil.getUserId(token);
-        chatService.applyFriend(userId, accepterId);
+        applyFriendService.applyFriend(userId, accepterId);
         return RestResponse.ok();
     }
 
@@ -88,7 +90,7 @@ public class ChatController {
             @RequestHeader("authorization") String token
     ) {
         Long userId = JWTUtil.getUserId(token);
-        List<FriendApplyModal> modals = chatService.getMyFriendApply(userId);
+        List<FriendApplyModal> modals = applyFriendService.getMyFriendApply(userId);
         return RestResponse.ok(modals);
     }
 
@@ -99,7 +101,7 @@ public class ChatController {
             @RequestBody FriendApplyModal modal
     ) {
         Long userId = JWTUtil.getUserId(token);
-        chatService.handleFriendApply(userId, senderId, modal);
+        applyFriendService.handleFriendApply(userId, senderId, modal);
         return RestResponse.ok();
     }
 }
