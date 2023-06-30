@@ -1,12 +1,7 @@
 package com.young.asow.socket;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.young.asow.entity.UserConversation;
-import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.MessageModal;
-import com.young.asow.response.RestResponse;
-import com.young.asow.service.ChatService;
 import com.young.asow.util.auth.JWTUtil;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -34,7 +29,7 @@ public class WebSocketServer {
     private static final long sessionTimeout = 60000;
 
     // 用来存放每个客户端对应的WebSocketServer对象
-    private static final Map<String, WebSocketServer> webSocketMap = new ConcurrentHashMap<>();
+    private static final Map<Long, WebSocketServer> webSocketMap = new ConcurrentHashMap<>();
 
     // 与某个客户端的连接会话，需要通过它来给客户端发送数据
     private Session session;
@@ -56,7 +51,7 @@ public class WebSocketServer {
         if (webSocketMap.containsKey(userId)) {
             webSocketMap.remove(userId);
         }
-        webSocketMap.put(String.valueOf(userId), this);
+        webSocketMap.put(userId, this);
         log.info("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         MessageModal modal = new MessageModal();
         modal.setContent("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
@@ -70,7 +65,7 @@ public class WebSocketServer {
     // 连接关闭调用的方法
     @OnClose
     public void onClose(Session session) throws IOException {
-        try {
+        try (session) {
             if (webSocketMap.containsKey(uid)) {
                 webSocketMap.remove(uid);
             }
@@ -101,7 +96,7 @@ public class WebSocketServer {
     private void handleMessageWithType(MessageModal clientMessage, Session session) throws IOException {
         switch (clientMessage.getEvent()) {
             case "heartbeat":
-                handlePing(session);
+                handlePing();
                 break;
             case "chat":
                 handleChat(clientMessage);
@@ -115,29 +110,34 @@ public class WebSocketServer {
         }
     }
 
-    private void handlePing(Session session) throws IOException {
+    private void handlePing() throws IOException {
         MessageModal sm = new MessageModal();
         sm.setType("pong");
         sm.setEvent("heartbeat");
         sm.setContent(LocalDateTime.now().toString());
-        session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
+        sendMessage(JSONObject.toJSONString(sm));
     }
 
     private void handleChat(MessageModal clientMessage) {
-        // 保存消息到数据库，刷新列表时加载   初步定下来：等保存成功再发送
-        Long userId = JWTUtil.getUserId(token);
-        MessageModal dbModal = webSocketService.saveMessageWithConversation(clientMessage, userId);
+        try {
+            // 保存消息到数据库，刷新列表时加载   初步定下来：等保存成功再发送
+            Long userId = JWTUtil.getUserId(token);
+            MessageModal dbModal = webSocketService.saveMessageWithConversation(clientMessage, userId);
 
-        //  发给自己，可以看作是系统消息
+            //  发给自己，可以看作是系统消息
 //            session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
-        // 发给自己
-        clientMessage.setId(dbModal.getId());
-        sendMessageByWayBillId(clientMessage.getFromId().toString(), JSONObject.toJSONString(clientMessage));
+            // 发给自己
+            clientMessage.setId(dbModal.getId());
+            sendMessageByWayBillId(clientMessage.getFromId(), JSONObject.toJSONString(clientMessage));
+            Thread.sleep(100);
 
-        // 发给目标
-        // 给目标增加未读
-        clientMessage.setUnread(dbModal.getUnread());
-        sendMessageByWayBillId(clientMessage.getToId().toString(), JSONObject.toJSONString(clientMessage));
+            // 发给目标
+            // 给目标增加未读
+            clientMessage.setUnread(dbModal.getUnread());
+            sendMessageByWayBillId(clientMessage.getToId(), JSONObject.toJSONString(clientMessage));
+        } catch (Exception e) {
+            log.error("发送消息发送异常：" + e.getMessage());
+        }
     }
 
     // TODO
@@ -156,12 +156,16 @@ public class WebSocketServer {
      * @param error
      */
     @OnError
-    public void onError(Session session, Throwable error) throws IOException {
+    public void onError(Session session, Throwable error) {
         log.error("websocket编号uid错误: " + this.uid + "原因: " + error.getMessage());
-        MessageModal sm = new MessageModal();
-        sm.setEvent("error");
-        sm.setContent(error.getMessage());
-        session.getBasicRemote().sendText(JSONObject.toJSONString(sm));
+        try {
+            MessageModal sm = new MessageModal();
+            sm.setEvent("error");
+            sm.setContent(error.getMessage());
+            sendMessage(JSONObject.toJSONString(sm));
+        } catch (IOException e) {
+            log.error("发送错误消息时出现异常: " + e.getMessage());
+        }
         error.printStackTrace();
     }
 
@@ -172,11 +176,12 @@ public class WebSocketServer {
      * @param message
      * @return boolean
      */
-    public static boolean sendMessageByWayBillId(@NonNull String key, String message) {
+    public static synchronized boolean sendMessageByWayBillId(@NonNull Long key, String message) {
         WebSocketServer webSocketServer = webSocketMap.get(key);
         if (Objects.nonNull(webSocketServer)) {
             try {
-                webSocketServer.sendMessage(message);
+                webSocketServer.session.getBasicRemote().sendText(message);
+//                webSocketServer.sendMessage(message);
                 log.info("websocket发送消息编号uid为: " + key + "发送消息: " + message);
                 return true;
             } catch (Exception e) {
@@ -239,7 +244,9 @@ public class WebSocketServer {
 
     // 实现服务器主动推送
     public void sendMessage(String message) throws IOException {
-        this.session.getBasicRemote().sendText(message);
+        synchronized (this.session) {
+            this.session.getAsyncRemote().sendText(message);
+        }
     }
 
 

@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 public class ConvertUtil {
 
-    public static <S, T> T convert(S source, Class<T> targetClass, Supplier<T> defaultValueSupplier) {
+    private static <S, T> T convert(S source, Class<T> targetClass, Supplier<T> defaultValueSupplier) {
         try {
             T target = targetClass.getDeclaredConstructor().newInstance();
             if (source != null) {
@@ -26,8 +26,11 @@ public class ConvertUtil {
         return defaultValueSupplier.get();
     }
 
-    public static ConversationModal Conversation2Modal(Conversation conversation) {
-        return convert(conversation, ConversationModal.class, ConversationModal::new);
+    public static ConversationModal Conversation2Modal(Conversation conversation, User from, User to) {
+        ConversationModal modal = convert(conversation, ConversationModal.class, ConversationModal::new);
+        modal.setFrom(ConvertUtil.User2Modal(from));
+        modal.setTo(ConvertUtil.User2Modal(to));
+        return modal;
     }
 
     public static UserInfoModal User2Modal(User user) {

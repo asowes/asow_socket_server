@@ -72,10 +72,13 @@ public class SnowflakeIdGenerator {
     private static final SnowflakeIdGenerator INSTANCE = new SnowflakeIdGenerator(1, 1);
 
     public static long getId() {
-//        long id = INSTANCE.nextId();
+        long id = INSTANCE.nextId();
 //        String idStr = String.valueOf(id).substring(0, 14);
 //        return Long.parseLong(idStr);
-        return INSTANCE.nextId();
+        String numberString = String.valueOf(id);
+        String trimmedNumberString = numberString.substring(3, numberString.length() - 3);
+        return Long.parseLong(trimmedNumberString);
+//        return INSTANCE.nextId();
     }
 
 }

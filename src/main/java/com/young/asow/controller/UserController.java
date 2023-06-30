@@ -21,7 +21,7 @@ public class UserController {
     public void socket(
             @RequestParam(name = "message") String message
     ) {
-        WebSocketServer.sendMessageByWayBillId("439094307840987136", message);
+        WebSocketServer.sendMessageByWayBillId(439094307840987136L, message);
     }
 
     @PreAuthorize("hasRole('USER')")

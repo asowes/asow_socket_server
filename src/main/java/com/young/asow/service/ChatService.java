@@ -1,11 +1,13 @@
 package com.young.asow.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.young.asow.entity.*;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
 import com.young.asow.modal.FriendApplyModal;
 import com.young.asow.modal.MessageModal;
 import com.young.asow.repository.*;
+import com.young.asow.socket.WebSocketServer;
 import com.young.asow.util.ConvertUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
@@ -16,10 +18,7 @@ import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -55,10 +54,8 @@ public class ChatService {
             User to = conversation.getTo();
             Message last = conversation.getLastMessage();
 
-            ConversationModal modal = ConvertUtil.Conversation2Modal(conversation);
+            ConversationModal modal = ConvertUtil.Conversation2Modal(conversation, from, to);
             modal.setUnread(userConversation.getUnread());
-            modal.setFrom(ConvertUtil.User2Modal(from));
-            modal.setTo(ConvertUtil.User2Modal(to));
             modal.setLastMessage(ConvertUtil.Message2LastMessage(last));
             modals.add(modal);
         }
@@ -134,16 +131,55 @@ public class ChatService {
     // ********************************** 放到另一个service
 
     public List<FriendApplyModal> searchUsers(Long meId, String keyword) {
-        return userRepository.findByKeyword(keyword)
-                .stream()
-                .map(findUser -> {
-                    FriendApply friendApply =
-                            friendApplyRepository.relationship(meId, findUser.getId())
-                                    .orElse(null);
+        List<FriendApplyModal> data = new ArrayList<>();
+        Set<Long> processedApplies = new HashSet<>();
 
-                    return ConvertUtil.FriendApply2Modal(findUser, friendApply);
-                })
-                .collect(Collectors.toList());
+        List<User> findUsers = userRepository.findByKeyword(keyword);
+        findUsers.forEach(findUser -> {
+            if (Objects.equals(findUser.getId(), meId)) {
+                FriendApply f = new FriendApply();
+                f.setStatus(FriendApply.STATUS.SELF);
+                data.add(ConvertUtil.FriendApply2Modal(findUser, f));
+                return;
+            }
+
+            List<FriendApply> userAcceptApplies = findUser.getAcceptApplies();
+            List<FriendApply> userSendApplies = findUser.getSendApplies();
+
+            handleFriendApplies(data, findUser, userAcceptApplies, meId, processedApplies);
+            handleFriendApplies(data, findUser, userSendApplies, meId, processedApplies);
+
+            if (userAcceptApplies.isEmpty() && userSendApplies.isEmpty()) {
+                data.add(ConvertUtil.FriendApply2Modal(findUser, null));
+            }
+        });
+
+        return data;
+    }
+
+    private void handleFriendApplies(
+            List<FriendApplyModal> data,
+            User findUser,
+            List<FriendApply> friendApplies,
+            Long meId,
+            Set<Long> processedApplies
+    ) {
+        friendApplies.stream()
+                .filter(apply -> !processedApplies.contains(apply.getId()))
+                .filter(apply ->
+                        Objects.equals(apply.getSender().getId(), meId)
+                                ||
+                                Objects.equals(apply.getAccepter().getId(), meId)
+                )
+                .forEach(apply -> {
+                    if (Objects.equals(apply.getAccepter().getId(), meId)
+                            && apply.getStatus().equals(FriendApply.STATUS.APPLYING)
+                    ) {
+                        apply.setStatus(FriendApply.STATUS.BE_APPLIED);
+                    }
+                    data.add(ConvertUtil.FriendApply2Modal(findUser, apply));
+                    processedApplies.add(apply.getId());
+                });
     }
 
 
@@ -198,6 +234,7 @@ public class ChatService {
                     friendApply.setSender(sender);
                     friendApply.setAccepter(accepter);
                     friendApply.setApplyTime(LocalDateTime.now());
+                    friendApply.setOperateTime(LocalDateTime.now());
                     friendApply.setStatus(FriendApply.STATUS.APPLYING);
                     friendApplyRepository.save(friendApply);
                 });
@@ -223,14 +260,19 @@ public class ChatService {
 
         FriendApply.STATUS status = FriendApply.STATUS.valueOf(modal.getStatus());
 
-        if (Objects.equals(FriendApply.STATUS.APPLYING, status)) {
+        if (!Objects.equals(FriendApply.STATUS.ACCEPTED, status) &&
+                !Objects.equals(FriendApply.STATUS.REFUSED, status)
+        ) {
             throw new BusinessException("参数异常");
         }
 
         friendApply.setStatus(status);
         friendApply.setOperateTime(LocalDateTime.now());
         friendApplyRepository.save(friendApply);
-        becomeFriendCreateConversation(sender, accepter);
+
+        if (Objects.equals(FriendApply.STATUS.ACCEPTED, status)) {
+            becomeFriendCreateConversation(sender, accepter);
+        }
     }
 
 
@@ -246,7 +288,15 @@ public class ChatService {
 
         dbConversation.getUserConversations().add(sendConversation);
         dbConversation.getUserConversations().add(acceptConversation);
-        conversationRepository.save(dbConversation);
+        Conversation newConversation = conversationRepository.save(dbConversation);
+
+        MessageModal modal = new MessageModal();
+        modal.setEvent("applyFriend");
+        ConversationModal conversationModal = ConvertUtil.Conversation2Modal(newConversation, sender, accepter);
+        conversationModal.setLastMessage(ConvertUtil.Message2LastMessage(newConversation.getLastMessage()));
+        modal.setData(conversationModal);
+        WebSocketServer.sendMessageByWayBillId(sender.getId(), JSONObject.toJSONString(modal));
+        WebSocketServer.sendMessageByWayBillId(accepter.getId(), JSONObject.toJSONString(modal));
     }
 
     private UserConversation createUserConversation(User user, Conversation conversation) {

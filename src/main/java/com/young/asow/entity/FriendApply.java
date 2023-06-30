@@ -36,7 +36,9 @@ public class FriendApply extends BaseEntity {
         STRANGE,
         APPLYING,
         ACCEPTED,
-        REFUSED;
+        REFUSED,
+        SELF,
+        BE_APPLIED;
     }
 
 }

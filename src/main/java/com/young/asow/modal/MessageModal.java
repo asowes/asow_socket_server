@@ -19,6 +19,8 @@ public class MessageModal extends LastMessage {
 
     Long toId;
 
+    Object data;
+
     Integer unread;
 
     Boolean loading;
