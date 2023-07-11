@@ -34,6 +34,7 @@ public class UserService implements UserDetailsService {
                     BCryptPasswordEncoder bcryptPassword = new BCryptPasswordEncoder();
                     User user = new User();
                     user.setUsername(modal.getUsername());
+                    user.setNickname(modal.getNickname());
                     user.setPassword(bcryptPassword.encode(modal.getPassword()));
                     user.addAuthority(new Authority(Authority.ROLE.USER.value()));
                     userRepository.save(user);

@@ -11,4 +11,6 @@ public class UserModal {
     String username;
 
     String password;
+
+    String nickname;
 }

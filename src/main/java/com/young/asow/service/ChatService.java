@@ -1,24 +1,27 @@
 package com.young.asow.service;
 
-import com.alibaba.fastjson.JSONObject;
-import com.young.asow.entity.*;
+import com.young.asow.entity.Conversation;
+import com.young.asow.entity.Message;
+import com.young.asow.entity.User;
+import com.young.asow.entity.UserConversation;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
-import com.young.asow.modal.FriendApplyModal;
 import com.young.asow.modal.MessageModal;
-import com.young.asow.repository.*;
-import com.young.asow.socket.WebSocketServer;
+import com.young.asow.repository.ConversationRepository;
+import com.young.asow.repository.MessageRepository;
+import com.young.asow.repository.UserConversationRepository;
+import com.young.asow.repository.UserRepository;
 import com.young.asow.util.ConvertUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -28,20 +31,17 @@ public class ChatService {
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final UserConversationRepository userConversationRepository;
-    private final FriendApplyRepository friendApplyRepository;
 
     public ChatService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
             MessageRepository messageRepository,
-            UserConversationRepository userConversationRepository,
-            FriendApplyRepository friendApplyRepository
+            UserConversationRepository userConversationRepository
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.userConversationRepository = userConversationRepository;
-        this.friendApplyRepository = friendApplyRepository;
     }
 
     public List<ConversationModal> getConversations(Long userId) {
