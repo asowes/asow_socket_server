@@ -1,16 +1,11 @@
 package com.young.asow.service;
 
-import com.young.asow.entity.Conversation;
-import com.young.asow.entity.Message;
-import com.young.asow.entity.User;
-import com.young.asow.entity.UserConversation;
+import com.young.asow.entity.*;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
+import com.young.asow.modal.GroupUserModal;
 import com.young.asow.modal.MessageModal;
-import com.young.asow.repository.ConversationRepository;
-import com.young.asow.repository.MessageRepository;
-import com.young.asow.repository.UserConversationRepository;
-import com.young.asow.repository.UserRepository;
+import com.young.asow.repository.*;
 import com.young.asow.util.ConvertUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
@@ -22,7 +17,10 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static com.young.asow.entity.Conversation.conversationIsSingle;
 
 @Log4j2
 @Service
@@ -31,23 +29,27 @@ public class ChatService {
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final UserConversationRepository userConversationRepository;
+    private final GroupUserRepository groupUserRepository;
 
     public ChatService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
             MessageRepository messageRepository,
-            UserConversationRepository userConversationRepository
+            UserConversationRepository userConversationRepository,
+            GroupUserRepository groupUserRepository
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.userConversationRepository = userConversationRepository;
+        this.groupUserRepository = groupUserRepository;
     }
 
     public List<ConversationModal> getConversations(Long userId) {
-        List<UserConversation> userConversations = userConversationRepository.findByUserId(userId);
         List<ConversationModal> modals = new ArrayList<>();
 
+        // 私聊的会话
+        List<UserConversation> userConversations = userConversationRepository.findByUserId(userId);
         for (UserConversation userConversation : userConversations) {
             Conversation conversation = userConversation.getConversation();
             User from = conversation.getFrom();
@@ -57,6 +59,25 @@ public class ChatService {
             ConversationModal modal = ConvertUtil.Conversation2Modal(conversation, from, to);
             modal.setUnread(userConversation.getUnread());
             modal.setLastMessage(ConvertUtil.Message2LastMessage(last));
+            modals.add(modal);
+        }
+
+        // 群组的会话
+        List<GroupUser> groupUsers = groupUserRepository.findByUserId(userId);
+        for (GroupUser groupUser : groupUsers) {
+            Conversation conversation = groupUser.getChatGroup().getConversation();
+            List<GroupUserModal> currentGroupUsers =
+                    groupUserRepository.findByChatGroupId(conversation.getChatGroup().getId())
+                            .stream()
+                            .map(ConvertUtil::GroupUser2Modal)
+                            .collect(Collectors.toList());
+            User from = groupUser.getUser();
+            Message last = conversation.getLastMessage();
+
+            ConversationModal modal = ConvertUtil.Conversation2Modal(conversation, from, null);
+            modal.setUnread(groupUser.getUnread());
+            modal.setLastMessage(ConvertUtil.Message2LastMessage(last));
+            modal.setGroupUsers(currentGroupUsers);
             modals.add(modal);
         }
 
@@ -80,22 +101,26 @@ public class ChatService {
     }
 
     @Transactional
-    public MessageModal saveMessageWithConversation(MessageModal messageModal, Long fromId) {
+    public List<MessageModal> saveMessageWithConversation(MessageModal messageModal, Long fromId) {
         Long findConversationId = messageModal.getConversationId();
         Long toId = messageModal.getToId();
 
         Conversation dbConversation = conversationRepository.findById(findConversationId)
                 .orElseThrow(() -> new BusinessException("[" + findConversationId + "]" + " is not found"));
 
+        User to;
         User from = userRepository.findById(fromId)
                 .orElseThrow(() -> new BusinessException("[" + fromId + "]" + " is not found"));
 
-        User to = userRepository.findById(toId)
-                .orElseThrow(() -> new BusinessException("[" + toId + "]" + " is not found"));
-
-        Message message = new Message();
+        if (conversationIsSingle(dbConversation)) {
+            to = userRepository.findById(toId)
+                    .orElseThrow(() -> new BusinessException("[" + toId + "]" + " is not found"));
+        } else {
+            to = null;
+        }
 
         // 保存本次消息，并设置为最后一条消息
+        Message message = new Message();
         message.setConversation(dbConversation);
         message.setFrom(from);
         message.setTo(to);
@@ -109,22 +134,51 @@ public class ChatService {
         conversationRepository.save(dbConversation);
 
         // 给对方增加未读数量
-        UserConversation userConversation =
-                userConversationRepository.findByUserIdAndConversationId(toId, dbConversation.getId());
-        userConversation.setUnread(userConversation.getUnread() + 1);
+        List<MessageModal> messageModals = new ArrayList<>();
 
-        MessageModal modal = new MessageModal();
-        modal.setUnread(userConversation.getUnread());
-        modal.setId(message.getId());
-        return modal;
+        if (conversationIsSingle(dbConversation)) {
+            UserConversation userConversation =
+                    userConversationRepository.findByUserIdAndConversationId(toId, dbConversation.getId());
+            userConversation.setUnread(userConversation.getUnread() + 1);
+
+            MessageModal modal = new MessageModal();
+            modal.setId(message.getId());
+            modal.setUnread(userConversation.getUnread());
+            modal.setToId(toId);
+            messageModals.add(modal);
+        } else {
+            List<GroupUser> groupUsers = groupUserRepository.findByChatGroupId(dbConversation.getChatGroup().getId());
+            groupUsers.stream()
+                    .filter(groupUser -> !Objects.equals(groupUser.getUser().getId(), fromId))
+                    .forEach(groupUser -> {
+                        MessageModal modal = new MessageModal();
+                        groupUser.setUnread(groupUser.getUnread() + 1);
+                        modal.setId(message.getId());
+                        modal.setToId(groupUser.getUser().getId());
+                        modal.setUnread(groupUser.getUnread());
+                        messageModals.add(modal);
+                    });
+        }
+
+        return messageModals;
     }
 
 
     public void readMessage(Long userId, Long conversationId) {
-        UserConversation userConversation =
-                userConversationRepository.findByUserIdAndConversationId(userId, conversationId);
-        userConversation.setUnread(0);
-        userConversationRepository.save(userConversation);
+        Conversation dbConversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new BusinessException("[" + conversationId + "]" + " is not found"));
+
+        if (conversationIsSingle(dbConversation)) {
+            UserConversation userConversation =
+                    userConversationRepository.findByUserIdAndConversationId(userId, conversationId);
+            userConversation.setUnread(0);
+            userConversationRepository.save(userConversation);
+        } else {
+            GroupUser groupUser = groupUserRepository
+                    .findByChatGroupIdAndUserId(dbConversation.getChatGroup().getId(), userId);
+            groupUser.setUnread(0);
+            groupUserRepository.save(groupUser);
+        }
     }
 
 

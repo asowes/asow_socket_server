@@ -2,20 +2,14 @@ package com.young.asow.modal;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LastMessage {
-    Long id;
+public class GroupUserModal extends UserInfoModal {
 
-    String type;
-
-    String content;
-
-    LocalDateTime sendTime;
-
-    Long fromId;
+    String userInGroupName;
 }

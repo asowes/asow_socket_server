@@ -2,9 +2,11 @@ package com.young.asow.entity;
 
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @MappedSuperclass
 @Getter
@@ -19,6 +21,10 @@ public abstract class BaseEntity implements Serializable {
     @Basic(optional = false)
     @Column(name = "id", nullable = false)
     protected Long id;
+
+    @Column
+    @CreatedDate
+    LocalDateTime createTime;
 
     @Override
     public int hashCode() {

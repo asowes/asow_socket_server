@@ -63,4 +63,13 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user")
     private Set<UserConversation> userConversations = new HashSet<>();
+
+
+    @ManyToMany
+    @JoinTable(
+            name = "chat_user_group",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "chat_group_id")
+    )
+    private Set<ChatGroup> chatGroups = new HashSet<>();
 }

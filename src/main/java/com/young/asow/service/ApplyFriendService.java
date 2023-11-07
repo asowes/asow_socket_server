@@ -180,9 +180,9 @@ public class ApplyFriendService {
 
     private void becomeFriendCreateConversation(User sender, User accepter) {
         Conversation conversation = new Conversation();
-        conversation.setCreateTime(LocalDateTime.now());
         conversation.setFrom(sender);
         conversation.setTo(accepter);
+        conversation.setType(Conversation.Type.SINGLE);
         Conversation dbConversation = conversationRepository.save(conversation);
 
         UserConversation sendConversation = createUserConversation(sender, dbConversation);
@@ -210,8 +210,8 @@ public class ApplyFriendService {
         ConversationModal conversationModal = ConvertUtil.Conversation2Modal(newConversation, sender, accepter);
         conversationModal.setLastMessage(ConvertUtil.Message2LastMessage(newConversation.getLastMessage()));
         modal.setData(conversationModal);
-        WebSocketServer.sendMessageByWayBillId(sender.getId(), JSONObject.toJSONString(modal));
-        WebSocketServer.sendMessageByWayBillId(accepter.getId(), JSONObject.toJSONString(modal));
+        WebSocketServer.sendMessage(sender.getId(), JSONObject.toJSONString(modal));
+        WebSocketServer.sendMessage(accepter.getId(), JSONObject.toJSONString(modal));
 
         // 在conversation中添加第一条消息
         MessageModal messageModal = new MessageModal();
@@ -224,9 +224,9 @@ public class ApplyFriendService {
         messageModal.setFromId(accepter.getId());
         messageModal.setToId(sender.getId());
         messageModal.setSendTime(LocalDateTime.now());
-        WebSocketServer.sendMessageByWayBillId(accepter.getId(), JSONObject.toJSONString(messageModal));
+        WebSocketServer.sendMessage(accepter.getId(), JSONObject.toJSONString(messageModal));
         messageModal.setUnread(1);
-        WebSocketServer.sendMessageByWayBillId(sender.getId(), JSONObject.toJSONString(messageModal));
+        WebSocketServer.sendMessage(sender.getId(), JSONObject.toJSONString(messageModal));
     }
 
     private UserConversation createUserConversation(User user, Conversation conversation) {

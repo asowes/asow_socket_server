@@ -36,13 +36,23 @@ INSERT INTO user_authorities(user_id, authority)
 VALUES (5, 'ROLE_SUPER_ADMIN');
 
 # chat_conversation
-INSERT INTO chat_conversation(id, create_time, from_id, to_id, top_priority, last_message_id)
+INSERT INTO chat_conversation(id, create_time, from_id, to_id, top_priority, last_message_id, type)
 VALUES (1, '2023-01-26 17:02:05', 1, 2, 0,
-        null);
+        null, 0);
 
-INSERT INTO chat_conversation(id, create_time, from_id, to_id, top_priority, last_message_id)
+INSERT INTO chat_conversation(id, create_time, from_id, to_id, top_priority, last_message_id, type)
 VALUES (2, '2023-01-26 17:02:05', 3, 1, 0,
-        null);
+        null, 0);
+
+INSERT INTO chat_conversation(id, create_time, from_id, to_id, top_priority, last_message_id, type)
+VALUES (3, '2023-01-26 17:02:05', 3, null, 0,
+        null, 1);
+
+# chat_group
+INSERT INTO chat_group(id, avatar, create_time, name, conversation_id)
+VALUES (1, 'https://raw.githubusercontent.com/walkonairy/asow-image/main/chat/dog-ball2.png', '2023-11-02 15:18:12',
+        '测试群', 3);
+
 
 # 初始化 新增 用户-会话 中间表
 INSERT INTO chat_user_conversation(unread, conversation_id, user_id)
@@ -53,3 +63,11 @@ INSERT INTO chat_user_conversation(unread, conversation_id, user_id)
 VALUES (0, 2, 1);
 INSERT INTO chat_user_conversation(unread, conversation_id, user_id)
 VALUES (0, 2, 3);
+# 群组的
+INSERT INTO chat_user_group(id, unread, user_in_group_name, chat_group_id, user_id)
+VALUES (1, 0, '', 1, 1);
+INSERT INTO chat_user_group(id, unread, user_in_group_name, chat_group_id, user_id)
+VALUES (2, 0, '', 1, 3);
+INSERT INTO chat_user_group(id, unread, user_in_group_name, chat_group_id, user_id)
+VALUES (3, 0, '', 1, 4);
+

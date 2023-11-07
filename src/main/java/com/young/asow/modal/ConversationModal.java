@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -22,4 +23,10 @@ public class ConversationModal {
     int unread;
 
     String topPriority;
+
+    String type;
+
+    ChatGroupModal chatGroup;
+
+    List<GroupUserModal> groupUsers;
 }

@@ -1,10 +1,7 @@
 package com.young.asow.util;
 
 
-import com.young.asow.entity.Conversation;
-import com.young.asow.entity.FriendApply;
-import com.young.asow.entity.Message;
-import com.young.asow.entity.User;
+import com.young.asow.entity.*;
 import com.young.asow.modal.*;
 import org.springframework.beans.BeanUtils;
 
@@ -30,7 +27,15 @@ public class ConvertUtil {
         ConversationModal modal = convert(conversation, ConversationModal.class, ConversationModal::new);
         modal.setFrom(ConvertUtil.User2Modal(from));
         modal.setTo(ConvertUtil.User2Modal(to));
+        modal.setType(conversation.getType().name());
+        if (conversation.getType().equals(Conversation.Type.GROUP)) {
+            modal.setChatGroup(ChatGroup2Modal(conversation.getChatGroup()));
+        }
         return modal;
+    }
+
+    public static ChatGroupModal ChatGroup2Modal(ChatGroup chatGroup) {
+        return convert(chatGroup, ChatGroupModal.class, ChatGroupModal::new);
     }
 
     public static UserInfoModal User2Modal(User user) {
@@ -42,14 +47,20 @@ public class ConvertUtil {
         if (Objects.isNull(message)) {
             return modal;
         }
+        if (!Objects.isNull(message.getTo())) {
+            modal.setToId(message.getTo().getId());
+        }
         modal.setFromId(message.getFrom().getId());
-        modal.setToId(message.getTo().getId());
         modal.setConversationId(message.getConversation().getId());
         return modal;
     }
 
     public static LastMessage Message2LastMessage(Message message) {
-        return convert(message, LastMessage.class, LastMessage::new);
+        LastMessage modal = convert(message, LastMessage.class, LastMessage::new);
+        if (Objects.nonNull(message)) {
+            modal.setFromId(message.getFrom().getId());
+        }
+        return modal;
     }
 
     public static FriendApplyModal FriendApply2Modal(User user, FriendApply friendApply) {
@@ -62,6 +73,14 @@ public class ConvertUtil {
         }
         modal.setId(friendApply.getId());
         modal.setStatus(friendApply.getStatus().name());
+        return modal;
+    }
+
+    public static GroupUserModal GroupUser2Modal(GroupUser groupUser) {
+        GroupUserModal modal = convert(groupUser, GroupUserModal.class, GroupUserModal::new);
+        modal.setUserId(groupUser.getUser().getId());
+        modal.setAvatar(groupUser.getUser().getAvatar());
+        modal.setNickname(groupUser.getUser().getNickname());
         return modal;
     }
 }
