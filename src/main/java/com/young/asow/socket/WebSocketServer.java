@@ -50,6 +50,7 @@ public class WebSocketServer {
         webSocketMap.put(userId, this);
         log.info("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         MessageModal modal = new MessageModal();
+        modal.setEvent("init");
         modal.setContent("websocket连接成功编号uid: " + userId + "，当前在线数: " + getOnlineClients());
         sendMessage(userId, JSONObject.toJSONString(modal));
     }
