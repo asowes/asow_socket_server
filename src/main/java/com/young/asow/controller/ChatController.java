@@ -38,9 +38,11 @@ public class ChatController {
 
     @GetMapping("/conversations/{conversationId}/messages")
     public RestResponse<List<MessageModal>> getConversationMessages(
+            @RequestHeader("authorization") String token,
             @PathVariable Long conversationId,
             @RequestParam(name = "page", defaultValue = "0") int page
     ) {
+        // todo  需要校验一下这个conversation里面是否包含用户
         List<MessageModal> modals = chatService.getConversationMessages(conversationId, page);
         return RestResponse.ok(modals);
     }

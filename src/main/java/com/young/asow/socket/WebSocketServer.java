@@ -95,7 +95,7 @@ public class WebSocketServer {
             case "notify":
                 handleNotify();
                 break;
-            case "friend_apply":
+            case "applyFriend":
                 handleFriendApply(clientMessage);
                 break;
             case "typing":
@@ -140,8 +140,7 @@ public class WebSocketServer {
     }
 
     private void handleFriendApply(MessageModal clientMessage) {
-        // TODO
-        Long userId = JWTUtil.getUserId(token);
+        sendMessage(clientMessage.getToId(), JSONObject.toJSONString(clientMessage));
     }
 
     private void handleTyping(MessageModal clientMessage) {
