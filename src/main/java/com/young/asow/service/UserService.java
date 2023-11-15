@@ -7,7 +7,6 @@ import com.young.asow.modal.UserInfoModal;
 import com.young.asow.modal.UserModal;
 import com.young.asow.repository.UserRepository;
 import com.young.asow.util.ConvertUtil;
-import com.young.asow.util.SnowflakeIdGenerator;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -56,5 +55,15 @@ public class UserService implements UserDetailsService {
                 .findById(userId)
                 .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
         return ConvertUtil.User2Modal(user);
+    }
+
+    public UserInfoModal updateUserInfo(Long userId, UserInfoModal data) {
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new BusinessException("[" + userId + "]" + " is not found"));
+        user.setNickname(data.getNickname());
+        user.setAvatar(data.getAvatar());
+        User dbUser = userRepository.save(user);
+        return ConvertUtil.User2Modal(dbUser);
     }
 }

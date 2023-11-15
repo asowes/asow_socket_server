@@ -2,66 +2,75 @@ package com.young.asow.util;
 
 public class SnowflakeIdGenerator {
 
-    private static final long WORKER_ID_BITS = 5L;
+    // 起始的时间戳，可以设置为项目开始的时间
+    private static final long START_TIMESTAMP = 1609459200000L; // 2021-01-01 00:00:00
 
-    private static final long DATA_CENTER_ID_BITS = 5L;
+    // 每一部分占用的位数
+    private static final long SEQUENCE_BIT = 12; // 序列号占用的位数
+    private static final long MACHINE_BIT = 5;   // 机器标识占用的位数
+    private static final long DATA_CENTER_BIT = 5; // 数据中心占用的位数
 
-    private static final long SEQUENCE_BITS = 12L;
+    // 每一部分的最大值
+    private static final long MAX_SEQUENCE = ~(-1L << SEQUENCE_BIT);
+    private static final long MAX_MACHINE_NUM = ~(-1L << MACHINE_BIT);
+    private static final long MAX_DATA_CENTER_NUM = ~(-1L << DATA_CENTER_BIT);
 
-    private static final long MAX_WORKER_ID = ~(-1L << WORKER_ID_BITS);
+    // 每一部分向左的位移
+    private static final long MACHINE_LEFT = SEQUENCE_BIT;
+    private static final long DATA_CENTER_LEFT = SEQUENCE_BIT + MACHINE_BIT;
+    private static final long TIMESTAMP_LEFT = DATA_CENTER_LEFT + DATA_CENTER_BIT;
 
-    private static final long MAX_DATA_CENTER_ID = ~(-1L << DATA_CENTER_ID_BITS);
+    private final long dataCenterId;  // 数据中心
+    private final long machineId;     // 机器标识
+    private long sequence = 0L; // 序列号
+    private long lastTimestamp = -1L;  // 上一次时间戳
 
-    private static final long MAX_SEQUENCE = ~(-1L << SEQUENCE_BITS);
+    private static SnowflakeIdGenerator defaultInstance; // 静态变量，用于保存默认的实例
 
-    private static final long TIMESTAMP_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS + DATA_CENTER_ID_BITS;
-
-    private static final long DATA_CENTER_ID_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS;
-
-    private static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
-
-    private static final long START_TIMESTAMP = 1577808000000L;
-
-    private final long workerId;
-
-    private final long dataCenterId;
-
-    private long sequence = 0L;
-
-    private long lastTimestamp = -1L;
-
-    public SnowflakeIdGenerator(long workerId, long dataCenterId) {
-        if (workerId > MAX_WORKER_ID || workerId < 0) {
-            throw new IllegalArgumentException(String.format("workerId必须在[0, %d]之间", MAX_WORKER_ID));
+    // 构造函数私有化，确保只能通过静态方法获取实例
+    private SnowflakeIdGenerator(long dataCenterId, long machineId) {
+        if (dataCenterId > MAX_DATA_CENTER_NUM || dataCenterId < 0) {
+            throw new IllegalArgumentException("Data center ID can't be greater than " + MAX_DATA_CENTER_NUM + " or less than 0");
         }
-        if (dataCenterId > MAX_DATA_CENTER_ID || dataCenterId < 0) {
-            throw new IllegalArgumentException(String.format("dataCenterId必须在[0, %d]之间", MAX_DATA_CENTER_ID));
+        if (machineId > MAX_MACHINE_NUM || machineId < 0) {
+            throw new IllegalArgumentException("Machine ID can't be greater than " + MAX_MACHINE_NUM + " or less than 0");
         }
-        this.workerId = workerId;
         this.dataCenterId = dataCenterId;
+        this.machineId = machineId;
     }
 
-    public synchronized long nextId() {
-        long timestamp = System.currentTimeMillis();
-        if (timestamp < lastTimestamp) {
-            throw new RuntimeException("时钟向后移动，拒绝生成ID");
+    public static synchronized SnowflakeIdGenerator getInstance() {
+        if (defaultInstance == null) {
+            defaultInstance = new SnowflakeIdGenerator(1, 1); // 默认的数据中心ID和机器ID
         }
-        if (timestamp == lastTimestamp) {
+        return defaultInstance;
+    }
+
+    public synchronized long generateId() {
+        long currentTimestamp = System.currentTimeMillis();
+
+        if (currentTimestamp < lastTimestamp) {
+            throw new RuntimeException("Clock moved backwards. Refusing to generate ID for " + (lastTimestamp - currentTimestamp) + " milliseconds");
+        }
+
+        if (currentTimestamp == lastTimestamp) {
             sequence = (sequence + 1) & MAX_SEQUENCE;
             if (sequence == 0) {
-                timestamp = tilNextMillis(lastTimestamp);
+                currentTimestamp = waitNextMillis(currentTimestamp);
             }
         } else {
             sequence = 0L;
         }
-        lastTimestamp = timestamp;
-        return ((timestamp - START_TIMESTAMP) << TIMESTAMP_SHIFT)
-                | (dataCenterId << DATA_CENTER_ID_SHIFT)
-                | (workerId << WORKER_ID_SHIFT)
+
+        lastTimestamp = currentTimestamp;
+
+        return ((currentTimestamp - START_TIMESTAMP) << TIMESTAMP_LEFT)
+                | (dataCenterId << DATA_CENTER_LEFT)
+                | (machineId << MACHINE_LEFT)
                 | sequence;
     }
 
-    private long tilNextMillis(long lastTimestamp) {
+    private long waitNextMillis(long lastTimestamp) {
         long timestamp = System.currentTimeMillis();
         while (timestamp <= lastTimestamp) {
             timestamp = System.currentTimeMillis();
@@ -69,16 +78,15 @@ public class SnowflakeIdGenerator {
         return timestamp;
     }
 
-    private static final SnowflakeIdGenerator INSTANCE = new SnowflakeIdGenerator(1, 1);
 
     public static long getId() {
-        long id = INSTANCE.nextId();
-//        String idStr = String.valueOf(id).substring(0, 14);
-//        return Long.parseLong(idStr);
-        String numberString = String.valueOf(id);
-        String trimmedNumberString = numberString.substring(3, numberString.length() - 3);
-        return Long.parseLong(trimmedNumberString);
-//        return INSTANCE.nextId();
+        return getInstance().generateId();
     }
 
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            long id = SnowflakeIdGenerator.getId();
+            System.out.println(id);
+        }
+    }
 }

@@ -44,4 +44,14 @@ public class UserController {
         UserInfoModal modal = userService.getUserByUserId(userId);
         return RestResponse.ok(modal);
     }
+
+    @PostMapping("/info")
+    public RestResponse<UserInfoModal> updateUserInfo(
+            @RequestHeader("authorization") String token,
+            @RequestBody UserInfoModal data
+    ) {
+        Long userId = JWTUtil.getUserId(token);
+        UserInfoModal modal = userService.updateUserInfo(userId, data);
+        return RestResponse.ok(modal);
+    }
 }

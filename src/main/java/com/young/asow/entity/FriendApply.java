@@ -39,6 +39,7 @@ public class FriendApply extends BaseEntity {
         REFUSED,
         SELF,
         BE_APPLIED;
+//        申请中、被申请中、拒绝、被拒绝、好友
     }
 
 }

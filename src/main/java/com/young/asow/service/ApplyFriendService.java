@@ -23,15 +23,18 @@ public class ApplyFriendService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final FriendApplyRepository friendApplyRepository;
+    private final UserRelationshipRepository userRelationshipRepository;
 
     public ApplyFriendService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
-            FriendApplyRepository friendApplyRepository
+            FriendApplyRepository friendApplyRepository,
+            UserRelationshipRepository userRelationshipRepository
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.friendApplyRepository = friendApplyRepository;
+        this.userRelationshipRepository = userRelationshipRepository;
     }
 
 
@@ -179,6 +182,16 @@ public class ApplyFriendService {
 
 
     private void becomeFriendCreateConversation(User sender, User accepter) {
+        UserRelationship senderRelationship = new UserRelationship();
+        senderRelationship.setUser(sender);
+        senderRelationship.setFriend(accepter);
+        userRelationshipRepository.save(senderRelationship);
+
+        UserRelationship accepterRelationship = new UserRelationship();
+        accepterRelationship.setUser(accepter);
+        accepterRelationship.setFriend(sender);
+        userRelationshipRepository.save(accepterRelationship);
+
         Conversation conversation = new Conversation();
         conversation.setFrom(sender);
         conversation.setTo(accepter);
