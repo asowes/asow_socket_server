@@ -1,11 +1,14 @@
 package com.young.asow.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.young.asow.entity.*;
 import com.young.asow.exception.BusinessException;
 import com.young.asow.modal.ConversationModal;
 import com.young.asow.modal.GroupUserModal;
 import com.young.asow.modal.MessageModal;
+import com.young.asow.modal.UserInfoModal;
 import com.young.asow.repository.*;
+import com.young.asow.socket.WebSocketServer;
 import com.young.asow.util.ConvertUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
@@ -14,11 +17,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.young.asow.entity.Conversation.conversationIsSingle;
 
@@ -30,19 +35,25 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final UserConversationRepository userConversationRepository;
     private final GroupUserRepository groupUserRepository;
+    private final UserRelationshipRepository userRelationshipRepository;
+    private final ChatGroupRepository chatGroupRepository;
 
     public ChatService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
             MessageRepository messageRepository,
             UserConversationRepository userConversationRepository,
-            GroupUserRepository groupUserRepository
+            GroupUserRepository groupUserRepository,
+            UserRelationshipRepository userRelationshipRepository,
+            ChatGroupRepository chatGroupRepository
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.userConversationRepository = userConversationRepository;
         this.groupUserRepository = groupUserRepository;
+        this.userRelationshipRepository = userRelationshipRepository;
+        this.chatGroupRepository = chatGroupRepository;
     }
 
     public List<ConversationModal> getConversations(Long userId) {
@@ -90,7 +101,7 @@ public class ChatService {
      * page往上增加就相当于获取上一段记录
      */
     public List<MessageModal> getConversationMessages(Long conversationId, int page) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
         Pageable pageable = PageRequest.of(page, 15, sort);
         return messageRepository
                 .findMessagesByConversationId(pageable, conversationId)
@@ -179,6 +190,100 @@ public class ChatService {
             groupUser.setUnread(0);
             groupUserRepository.save(groupUser);
         }
+    }
+
+    public List<UserInfoModal> findMyFriends(Long userId) {
+        List<UserRelationship> userRelationships = userRelationshipRepository.findUserRelationships(userId);
+        List<UserInfoModal> friendModals = new ArrayList<>();
+        userRelationships
+                .forEach(userRelationship -> {
+                    if (!Objects.equals(userRelationship.getUser().getId(), userId)) {
+                        friendModals.add(ConvertUtil.User2Modal(userRelationship.getUser()));
+                    }
+                    if (!Objects.equals(userRelationship.getFriend().getId(), userId)) {
+                        friendModals.add(ConvertUtil.User2Modal(userRelationship.getFriend()));
+                    }
+                });
+
+        return friendModals
+                .stream()
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public void createChatGroup(Long leaderId, List<Long> memberIds) {
+        List<User> allMembers = userRepository.findAllByIdIn(
+                Stream.concat(
+                        Stream.of(leaderId),
+                        memberIds.stream()
+                ).collect(Collectors.toList()));
+
+        // 创建一个Conversation
+        Conversation conversation = new Conversation();
+        conversation.setType(Conversation.Type.GROUP);
+
+        // 创建一个Group，绑定ConversationId
+        ChatGroup chatGroup = new ChatGroup();
+        List<String> nickNames = allMembers
+                .stream()
+                .map(User::getNickname)
+                .collect(Collectors.toList());
+        chatGroup.setConversation(conversation);
+        chatGroup.setName(String.join("、", nickNames));
+
+        // 创建一个LastMessage，与Conversation双向绑定
+        Message sysMessage = new Message();
+        User sys = userRepository.findById(User.sysId)
+                .orElseThrow(() -> new BusinessException("[" + User.sysId + "]" + " is not found"));
+        sysMessage.setFrom(sys);
+        sysMessage.setSendTime(LocalDateTime.now());
+        sysMessage.setContent(String.join("、", nickNames) + "加入了群聊");
+        sysMessage.setConversation(conversation);
+        conversation.setLastMessage(sysMessage);
+
+        ChatGroup dbGroup = chatGroupRepository.save(chatGroup);
+
+        // 将群成员创建到GroupUser表，绑定ChatGroup
+        List<GroupUser> groupUsers = allMembers
+                .stream()
+                .map(user -> {
+                    GroupUser groupUser = new GroupUser();
+                    groupUser.setUser(user);
+                    groupUser.setChatGroup(dbGroup);
+                    groupUser.setUnread(1);
+                    return groupUser;
+                })
+                .collect(Collectors.toList());
+        List<GroupUser> dbGroupUsers = groupUserRepository.saveAll(groupUsers);
+
+        // 向N个GroupUser发送websocket-通知客户端创建房间
+        MessageModal createModal = new MessageModal();
+        createModal.setEvent("createGroup");
+        ConversationModal conversationModal = ConvertUtil.Conversation2Modal(chatGroup.getConversation(), null, null);
+        conversationModal.setChatGroup(ConvertUtil.ChatGroup2Modal(chatGroup));
+        conversationModal.setLastMessage(ConvertUtil.Message2LastMessage(conversation.getLastMessage()));
+        conversationModal.setGroupUsers(dbGroupUsers.stream().map(ConvertUtil::GroupUser2Modal).collect(Collectors.toList()));
+        createModal.setData(conversationModal);
+        allMembers.forEach(user -> {
+            WebSocketServer.sendMessage(user.getId(), JSONObject.toJSONString(createModal));
+        });
+
+        // 向N个GroupUser发送websocket-发送问候语
+        MessageModal chatModal = new MessageModal();
+        Message dbMessage = chatGroup.getConversation().getLastMessage();
+        chatModal.setEvent("chat");
+        chatModal.setId(dbMessage.getId());
+        chatModal.setUnread(0);
+        chatModal.setContent(dbMessage.getContent());
+        chatModal.setConversationId(chatGroup.getConversation().getId());
+        chatModal.setFromId(User.sysId);
+        chatModal.setSendTime(LocalDateTime.now());
+        allMembers.forEach(user -> {
+            WebSocketServer.sendMessage(user.getId(), JSONObject.toJSONString(chatModal));
+        });
+
     }
 
 

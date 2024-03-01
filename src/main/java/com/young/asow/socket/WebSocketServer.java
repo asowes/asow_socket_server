@@ -121,7 +121,7 @@ public class WebSocketServer {
             // 发给自己
             // messageId 都一样 所以取第一条的id即可
             clientMessage.setId(dbModals.get(0).getId());
-            sendMessage(clientMessage.getFromId(), JSONObject.toJSONString(clientMessage));
+            sendThisSessionMessage(JSONObject.toJSONString(clientMessage));
             Thread.sleep(100);
 
             // 发给目标
@@ -160,6 +160,10 @@ public class WebSocketServer {
     }
 
 
+    /**
+     * 如果同一个用户开了两个浏览器窗口，那么消息只会发送给第一个打开的窗口，因为这个是根据id来获取session
+     * @param message
+     */
     public static void sendMessage(Long uid, String message) {
         synchronized (webSocketMap) {
             WebSocketServer userSocket = webSocketMap.get(uid);
@@ -172,6 +176,21 @@ public class WebSocketServer {
                         e.printStackTrace();
                     }
                 }
+            }
+        }
+    }
+
+
+    /**
+     * 如果同一个用户开了多个浏览器窗口，那么消息会发送给每一个窗口，因为这是直接通过session发送
+     * @param message
+     */
+    public void sendThisSessionMessage(String message) {
+        synchronized (session) {
+            try {
+                this.session.getBasicRemote().sendText(message);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

@@ -7,8 +7,9 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 @Entity(name = "chat_group")
 @Getter
@@ -23,11 +24,11 @@ public class ChatGroup extends BaseEntity {
     String avatar;
 
     @JsonBackReference
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id")
     private Conversation conversation;
 
     @ManyToMany(mappedBy = "chatGroups")
-    Set<User> groupUsers = new HashSet<>();
+    List<User> groupUsers = new ArrayList<>();
 
 }

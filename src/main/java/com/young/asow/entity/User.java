@@ -20,6 +20,8 @@ import java.util.Set;
 @AllArgsConstructor
 public class User extends BaseEntity {
 
+    public static Long sysId = 999999999L;
+
     @Column
     @NonNull
     String username;

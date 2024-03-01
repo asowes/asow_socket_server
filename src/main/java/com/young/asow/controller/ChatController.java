@@ -4,6 +4,7 @@ package com.young.asow.controller;
 import com.young.asow.modal.ConversationModal;
 import com.young.asow.modal.FriendApplyModal;
 import com.young.asow.modal.MessageModal;
+import com.young.asow.modal.UserInfoModal;
 import com.young.asow.response.RestResponse;
 import com.young.asow.service.ApplyFriendService;
 import com.young.asow.service.ChatService;
@@ -11,6 +12,7 @@ import com.young.asow.util.auth.JWTUtil;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/chat")
@@ -106,4 +108,25 @@ public class ChatController {
         applyFriendService.handleFriendApply(userId, senderId, modal);
         return RestResponse.ok();
     }
+
+
+    @GetMapping("/my/friends")
+    public RestResponse<List<UserInfoModal>> getMyFriends(
+            @RequestHeader("authorization") String token
+    ) {
+        Long userId = JWTUtil.getUserId(token);
+        List<UserInfoModal> modals = chatService.findMyFriends(userId);
+        return RestResponse.ok(modals);
+    }
+
+    @PostMapping("/group/create")
+    public RestResponse<?> createChatGroup(
+            @RequestHeader("authorization") String token,
+            @RequestBody Map<String, List<Long>> request
+    ){
+        Long userId = JWTUtil.getUserId(token);
+        chatService.createChatGroup(userId, request.get("groupIds"));
+        return RestResponse.ok();
+    }
+
 }

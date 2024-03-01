@@ -182,64 +182,49 @@ public class ApplyFriendService {
 
 
     private void becomeFriendCreateConversation(User sender, User accepter) {
-        UserRelationship senderRelationship = new UserRelationship();
-        senderRelationship.setUser(sender);
-        senderRelationship.setFriend(accepter);
-        userRelationshipRepository.save(senderRelationship);
+        // 创建好友关系
+        createUserRelationship(sender, accepter);
+        createUserRelationship(accepter, sender);
 
-        UserRelationship accepterRelationship = new UserRelationship();
-        accepterRelationship.setUser(accepter);
-        accepterRelationship.setFriend(sender);
-        userRelationshipRepository.save(accepterRelationship);
-
+        // 创建会话
         Conversation conversation = new Conversation();
         conversation.setFrom(sender);
         conversation.setTo(accepter);
         conversation.setType(Conversation.Type.SINGLE);
         Conversation dbConversation = conversationRepository.save(conversation);
 
+        // 创建未读表
         UserConversation sendConversation = createUserConversation(sender, dbConversation);
         UserConversation acceptConversation = createUserConversation(accepter, dbConversation);
 
+        // 设置未读
         sendConversation.setUnread(1);
         dbConversation.getUserConversations().add(sendConversation);
         dbConversation.getUserConversations().add(acceptConversation);
 
         // 设置添加好友后的第一句问候语
-        Message message = new Message();
-        message.setConversation(dbConversation);
-        message.setFrom(accepter);
-        message.setTo(sender);
-        message.setSendTime(LocalDateTime.now());
-        message.setType(Message.ContentType.TEXT);
-        message.setContent("我已经通过你的好友验证");
-
+        Message message = becomeFriendSetTheFirstMessageHello(sender, accepter, dbConversation);
         dbConversation.setLastMessage(message);
         Conversation newConversation = conversationRepository.save(dbConversation);
 
         // 向前端发送websocket通知建立conversation
-        MessageModal modal = new MessageModal();
-        modal.setEvent("applyFriend");
-        ConversationModal conversationModal = ConvertUtil.Conversation2Modal(newConversation, sender, accepter);
-        conversationModal.setLastMessage(ConvertUtil.Message2LastMessage(newConversation.getLastMessage()));
-        modal.setData(conversationModal);
-        WebSocketServer.sendMessage(sender.getId(), JSONObject.toJSONString(modal));
-        WebSocketServer.sendMessage(accepter.getId(), JSONObject.toJSONString(modal));
+        sendWsToClientNotifyCreateConversation(sender, accepter, newConversation);
 
         // 在conversation中添加第一条消息
-        MessageModal messageModal = new MessageModal();
-        messageModal.setEvent("chat");
-        messageModal.setId(newConversation.getLastMessage().getId());
-        messageModal.setUnread(0);
-        messageModal.setContent(message.getContent());
-        messageModal.setType(message.getType().name());
-        messageModal.setConversationId(newConversation.getId());
-        messageModal.setFromId(accepter.getId());
-        messageModal.setToId(sender.getId());
-        messageModal.setSendTime(LocalDateTime.now());
-        WebSocketServer.sendMessage(accepter.getId(), JSONObject.toJSONString(messageModal));
-        messageModal.setUnread(1);
-        WebSocketServer.sendMessage(sender.getId(), JSONObject.toJSONString(messageModal));
+        sendWsToClientTheFirstMessageHello(sender, accepter, newConversation, message);
+    }
+
+    private void createUserRelationship(User sender, User accepter) {
+        UserRelationship userRelationship = new UserRelationship();
+
+        UserRelationshipId userRelationshipId = new UserRelationshipId();
+        userRelationshipId.setUserId(sender.getId());
+        userRelationshipId.setFriendId(accepter.getId());
+
+        userRelationship.setId(userRelationshipId);
+        userRelationship.setUser(sender);
+        userRelationship.setFriend(accepter);
+        userRelationshipRepository.save(userRelationship);
     }
 
     private UserConversation createUserConversation(User user, Conversation conversation) {
@@ -254,5 +239,42 @@ public class ApplyFriendService {
         userConversation.setConversation(conversation);
         userConversation.setUnread(0);
         return userConversation;
+    }
+
+    private Message becomeFriendSetTheFirstMessageHello(User sender, User accepter, Conversation conversation) {
+        Message message = new Message();
+        message.setConversation(conversation);
+        message.setFrom(accepter);
+        message.setTo(sender);
+        message.setSendTime(LocalDateTime.now());
+        message.setType(Message.ContentType.TEXT);
+        message.setContent("我已经通过你的好友验证");
+        return message;
+    }
+
+    private void sendWsToClientNotifyCreateConversation(User sender, User accepter, Conversation conversation) {
+        MessageModal modal = new MessageModal();
+        modal.setEvent("applyFriend");
+        ConversationModal conversationModal = ConvertUtil.Conversation2Modal(conversation, sender, accepter);
+        conversationModal.setLastMessage(ConvertUtil.Message2LastMessage(conversation.getLastMessage()));
+        modal.setData(conversationModal);
+        WebSocketServer.sendMessage(sender.getId(), JSONObject.toJSONString(modal));
+        WebSocketServer.sendMessage(accepter.getId(), JSONObject.toJSONString(modal));
+    }
+
+    private void sendWsToClientTheFirstMessageHello(User sender, User accepter, Conversation conversation, Message message) {
+        MessageModal messageModal = new MessageModal();
+        messageModal.setEvent("chat");
+        messageModal.setId(conversation.getLastMessage().getId());
+        messageModal.setUnread(0);
+        messageModal.setContent(message.getContent());
+        messageModal.setType(message.getType().name());
+        messageModal.setConversationId(conversation.getId());
+        messageModal.setFromId(accepter.getId());
+        messageModal.setToId(sender.getId());
+        messageModal.setSendTime(LocalDateTime.now());
+        WebSocketServer.sendMessage(accepter.getId(), JSONObject.toJSONString(messageModal));
+        messageModal.setUnread(1);
+        WebSocketServer.sendMessage(sender.getId(), JSONObject.toJSONString(messageModal));
     }
 }
