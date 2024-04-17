@@ -81,6 +81,7 @@ public class ConvertUtil {
         modal.setUserId(groupUser.getUser().getId());
         modal.setAvatar(groupUser.getUser().getAvatar());
         modal.setNickname(groupUser.getUser().getNickname());
+        modal.setRole(groupUser.getRole().name());
         return modal;
     }
 }

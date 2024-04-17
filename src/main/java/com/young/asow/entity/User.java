@@ -69,7 +69,7 @@ public class User extends BaseEntity {
 
     @ManyToMany
     @JoinTable(
-            name = "chat_user_group",
+            name = "chat_group_user",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "chat_group_id")
     )

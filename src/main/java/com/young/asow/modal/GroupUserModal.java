@@ -12,4 +12,6 @@ import lombok.experimental.FieldDefaults;
 public class GroupUserModal extends UserInfoModal {
 
     String userInGroupName;
+
+    String role;
 }

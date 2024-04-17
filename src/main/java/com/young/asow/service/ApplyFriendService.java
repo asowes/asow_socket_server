@@ -248,7 +248,7 @@ public class ApplyFriendService {
         message.setTo(sender);
         message.setSendTime(LocalDateTime.now());
         message.setType(Message.ContentType.TEXT);
-        message.setContent("我已经通过你的好友验证");
+        message.setContent("U2FsdGVkX18OuyeOgpeXy0CBKf/UjfN0jkInRVu+BcpNvFfGca4NE5B9hDbXUShw39ziyEOEN6kLC6+dW2OPhw==");
         return message;
     }
 

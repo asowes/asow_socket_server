@@ -10,7 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 
-@Entity(name = "chat_user_group")
+@Entity(name = "chat_group_user")
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -22,12 +22,21 @@ public class GroupUser extends BaseEntity {
     @Column
     int unread;
 
+    @Column
+    GroupRole role;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    User user;
 
     @ManyToOne
     @JoinColumn(name = "chat_group_id")
-    private ChatGroup chatGroup;
+    ChatGroup chatGroup;
+
+    public enum GroupRole {
+        OWNER,
+        ADMIN,
+        MEMBER;
+    }
 
 }

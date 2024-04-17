@@ -251,6 +251,11 @@ public class ChatService {
                 .map(user -> {
                     GroupUser groupUser = new GroupUser();
                     groupUser.setUser(user);
+                    groupUser.setRole(
+                            Objects.equals(user.getId(), leaderId) ?
+                                    GroupUser.GroupRole.OWNER :
+                                    GroupUser.GroupRole.MEMBER
+                    );
                     groupUser.setChatGroup(dbGroup);
                     groupUser.setUnread(1);
                     return groupUser;
@@ -275,7 +280,7 @@ public class ChatService {
         Message dbMessage = chatGroup.getConversation().getLastMessage();
         chatModal.setEvent("chat");
         chatModal.setId(dbMessage.getId());
-        chatModal.setUnread(0);
+        chatModal.setUnread(1);
         chatModal.setContent(dbMessage.getContent());
         chatModal.setConversationId(chatGroup.getConversation().getId());
         chatModal.setFromId(User.sysId);
