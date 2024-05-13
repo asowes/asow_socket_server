@@ -123,7 +123,7 @@ public class ChatController {
     public RestResponse<?> createChatGroup(
             @RequestHeader("authorization") String token,
             @RequestBody Map<String, List<Long>> request
-    ){
+    ) {
         Long userId = JWTUtil.getUserId(token);
         chatService.createChatGroup(userId, request.get("groupIds"));
         return RestResponse.ok();
